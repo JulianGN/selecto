@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Selecto - Element Organizer & Selector Finder</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Plus+Jakarta+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card-bg: rgba(17, 24, 39, 0.7);
+      --border: rgba(255, 255, 255, 0.08);
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --accent: #6366f1; /* Indigo */
+      --accent-glow: rgba(99, 102, 241, 0.15);
+      --accent-gradient: linear-gradient(135deg, #a5b4fc, #6366f1);
+      --font-sans: 'Plus Jakarta Sans', sans-serif;
+      --font-display: 'Outfit', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      line-height: 1.6;
+      overflow-x: hidden;
+      min-height: 100vh;
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.1) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.08) 0%, transparent 40%);
+      background-attachment: fixed;
+    }
+
+    header {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 800;
+      background: var(--accent-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .logo svg {
+      color: var(--accent);
+      fill: none;
+      stroke: currentColor;
+    }
+
+    .nav-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.2s;
+      margin-left: 24px;
+      font-size: 0.95rem;
+    }
+
+    .nav-links a:hover {
+      color: var(--text);
+    }
+
+    .btn-github {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+
+    .btn-github:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-1px);
+    }
+
+    /* Hero Section */
+    .hero {
+      max-width: 1000px;
+      margin: 80px auto 60px;
+      padding: 0 20px;
+      text-align: center;
+    }
+
+    .badge-promo {
+      display: inline-flex;
+      align-items: center;
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      color: #a5b4fc;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 24px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      font-family: var(--font-display);
+      font-size: 3.5rem;
+      font-weight: 800;
+      line-height: 1.15;
+      margin-bottom: 20px;
+      letter-spacing: -0.02em;
+    }
+
+    h1 span {
+      background: linear-gradient(135deg, #c7d2fe 0%, #818cf8 50%, #4f46e5 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero p.lead {
+      color: var(--text-muted);
+      font-size: 1.25rem;
+      max-width: 650px;
+      margin: 0 auto 36px;
+      font-weight: 300;
+    }
+
+    .cta-group {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin-bottom: 60px;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 14px 28px;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 24px rgba(99, 102, 241, 0.5);
+    }
+
+    /* Extension Mockup Showcase */
+    .mockup-container {
+      max-width: 900px;
+      margin: 0 auto 100px;
+      padding: 0 20px;
+      perspective: 1000px;
+    }
+
+    .mockup-window {
+      background: #1e293b;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.8), 0 0 50px rgba(99, 102, 241, 0.1);
+      overflow: hidden;
+      transform: rotateX(2deg);
+      transition: transform 0.5s;
+    }
+
+    .mockup-window:hover {
+      transform: rotateX(0deg) translateY(-5px);
+    }
+
+    .mockup-header {
+      background: #0f172a;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .mockup-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #ef4444;
+    }
+    .mockup-dot:nth-child(2) { background: #eab308; }
+    .mockup-dot:nth-child(3) { background: #22c55e; }
+
+    .mockup-address {
+      flex-grow: 1;
+      background: #1e293b;
+      border-radius: 6px;
+      padding: 4px 12px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-left: 20px;
+      text-align: left;
+      font-family: monospace;
+    }
+
+    .mockup-body {
+      display: flex;
+      height: 380px;
+      background: #0f172a;
+      position: relative;
+    }
+
+    .webpage-mock {
+      flex-grow: 1;
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .mock-element {
+      border: 1px dashed rgba(255, 255, 255, 0.1);
+      padding: 15px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.02);
+      text-align: left;
+      transition: all 0.3s;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .mock-element:hover {
+      border-color: var(--accent);
+      background: rgba(99, 102, 241, 0.05);
+    }
+
+    .mock-element.selected {
+      border-color: #10b981;
+      background: rgba(16, 185, 129, 0.08);
+    }
+
+    .mock-badge {
+      position: absolute;
+      top: -10px;
+      right: 10px;
+      background: var(--accent);
+      color: white;
+      font-size: 0.7rem;
+      font-weight: bold;
+      padding: 2px 6px;
+      border-radius: 4px;
+      display: none;
+    }
+
+    .mock-element.selected .mock-badge {
+      display: block;
+      background: #10b981;
+    }
+
+    /* Floating Panel Mock */
+    .sidebar-mock {
+      width: 260px;
+      border-left: 1px solid var(--border);
+      background: rgba(15, 23, 42, 0.95);
+      display: flex;
+      flex-direction: column;
+      padding: 16px;
+      text-align: left;
+      backdrop-filter: blur(8px);
+    }
+
+    .sidebar-mock-header {
+      font-family: var(--font-display);
+      font-size: 0.95rem;
+      font-weight: 700;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      color: var(--accent);
+    }
+
+    .mock-queue-item {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px;
+      margin-bottom: 8px;
+      font-size: 0.75rem;
+    }
+
+    .mock-queue-item p {
+      font-family: monospace;
+      color: #a5b4fc;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 4px;
+    }
+
+    /* Features Grid */
+    .features-section {
+      max-width: 1000px;
+      margin: 0 auto 100px;
+      padding: 0 20px;
+    }
+
+    .section-title {
+      text-align: center;
+      font-family: var(--font-display);
+      font-size: 2.2rem;
+      font-weight: 800;
+      margin-bottom: 50px;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+    }
+
+    .feature-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 30px;
+      transition: all 0.3s;
+      backdrop-filter: blur(10px);
+    }
+
+    .feature-card:hover {
+      border-color: rgba(99, 102, 241, 0.3);
+      transform: translateY(-3px);
+      box-shadow: 0 10px 30px rgba(99, 102, 241, 0.05);
+    }
+
+    .feature-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: rgba(99, 102, 241, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
+      margin-bottom: 20px;
+    }
+
+    .feature-card h3 {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .feature-card p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--border);
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 40px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    footer a {
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.2s;
+      margin-left: 20px;
+    }
+
+    footer a:hover {
+      color: var(--text);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      h1 {
+        font-size: 2.5rem;
+      }
+      .mockup-body {
+        flex-direction: column;
+        height: auto;
+      }
+      .sidebar-mock {
+        width: 100%;
+        border-left: none;
+        border-top: 1px solid var(--border);
+      }
+      footer {
+        flex-direction: column;
+        gap: 16px;
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo">
+      <svg viewBox="0 0 128 128" width="28" height="28" fill="none">
+        <rect x="12" y="12" width="104" height="104" rx="20" stroke="currentColor" stroke-width="8" stroke-dasharray="14 10" />
+        <rect x="34" y="34" width="60" height="60" rx="10" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="6" />
+      </svg>
+      Selecto
+    </div>
+    <nav class="nav-links">
+      <a href="#features">Features</a>
+      <a href="privacy.html">Privacy Policy</a>
+      <a href="#" class="btn-github">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+        GitHub
+      </a>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <span class="badge-promo">Chrome Extension for Developers & QA</span>
+    <h1>Generate UI Locators <span>effortlessly</span></h1>
+    <p class="lead">Select HTML elements visually to build, rename, and export clean CSS, XPath, Playwright, and Cypress selectors for your test automation suites.</p>
+    <div class="cta-group">
+      <a href="#" class="btn-primary">
+        <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+        Install from Web Store
+      </a>
+    </div>
+  </section>
+
+  <section class="mockup-container">
+    <div class="mockup-window">
+      <div class="mockup-header">
+        <div class="mockup-dot"></div>
+        <div class="mockup-dot"></div>
+        <div class="mockup-dot"></div>
+        <div class="mockup-address">https://example.com/login-form</div>
+      </div>
+      <div class="mockup-body">
+        <div class="webpage-mock">
+          <p style="font-size: 0.9rem; color: var(--text-muted); text-align: left;">Demo Sandbox (Click below to simulate active selection):</p>
+          
+          <div class="mock-element" onclick="toggleMockSelect(this, 'button', 'page.getByRole(\'button\', { name: \'Submit\' })')">
+            <span class="mock-badge">Selected</span>
+            <button style="background: var(--accent); color: white; padding: 6px 12px; border: none; border-radius: 4px; pointer-events: none;">Submit</button>
+            <span style="font-size: 0.8rem; color: var(--text-muted); margin-left: 10px;">Clickable login button</span>
+          </div>
+
+          <div class="mock-element" onclick="toggleMockSelect(this, 'input', 'page.getByPlaceholder(\'Enter email...\')')">
+            <span class="mock-badge">Selected</span>
+            <input type="text" placeholder="Enter email..." style="background: rgba(255,255,255,0.05); border: 1px solid var(--border); padding: 6px; border-radius: 4px; width: 180px; pointer-events: none;" />
+            <span style="font-size: 0.8rem; color: var(--text-muted); margin-left: 10px;">Email input text field</span>
+          </div>
+        </div>
+        <div class="sidebar-mock">
+          <div class="sidebar-mock-header">
+            <span>Selecto Panel</span>
+            <span style="font-size: 0.75rem; color: #10b981;">● Inspector Active</span>
+          </div>
+          <div id="mock-queue-container" style="flex-grow: 1; overflow-y: auto;">
+            <div style="font-size: 0.75rem; color: var(--text-muted); text-align: center; margin-top: 50px;" id="mock-empty-state">
+              Click elements on the left to capture them in the list.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="features-section" id="features">
+    <h2 class="section-title">Why use Selecto?</h2>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+        </div>
+        <h3>Active Visual Selection</h3>
+        <p>Enable inspector mode and click elements directly on the website layout. Selecto highlights candidates live under the cursor.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><path d="M21 12H3M12 3v18"/></svg>
+        </div>
+        <h3>Multiple Output Formats</h3>
+        <p>Switch between CSS selectors, XPath queries, Playwright Locators, and Cypress commands instantly from a single item capture.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        </div>
+        <h3>Element List & Rename</h3>
+        <p>Keep a structured list of captured elements, rename them with custom aliases, drag to reorder them, and copy individually or export all as JSON.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        </div>
+        <h3>Shadow DOM Encapsulated</h3>
+        <p>The sidebar lives in a locked Shadow DOM. Host page stylesheet styles can never leak into, or break the extension interface.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div>&copy; 2026 Selecto. Released under the MIT License.</div>
+    <div>
+      <a href="#features">Features</a>
+      <a href="privacy.html">Privacy Policy</a>
+    </div>
+  </footer>
+
+  <script>
+    function toggleMockSelect(el, tag, playwrightCode) {
+      el.classList.toggle('selected');
+      const isSelected = el.classList.contains('selected');
+      const emptyState = document.getElementById('mock-empty-state');
+      const container = document.getElementById('mock-queue-container');
+
+      if (isSelected) {
+        if (emptyState) emptyState.style.display = 'none';
+        
+        const item = document.createElement('div');
+        item.className = 'mock-queue-item';
+        item.id = 'mock-item-' + tag;
+        item.innerHTML = `
+          <div style="display:flex; justify-content:space-between; font-weight:bold;">
+            <span>${tag.toUpperCase()}</span>
+            <span style="color:#ef4444; cursor:pointer;" onclick="removeMockItem('${tag}')">✕</span>
+          </div>
+          <p>${playwrightCode}</p>
+        `;
+        container.appendChild(item);
+      } else {
+        const item = document.getElementById('mock-item-' + tag);
+        if (item) item.remove();
+        checkEmpty();
+      }
+    }
+
+    function removeMockItem(tag) {
+      const item = document.getElementById('mock-item-' + tag);
+      if (item) item.remove();
+      
+      const elements = document.querySelectorAll('.mock-element');
+      elements.forEach(el => {
+        if (tag === 'button' && el.querySelector('button')) {
+          el.classList.remove('selected');
+        }
+        if (tag === 'input' && el.querySelector('input')) {
+          el.classList.remove('selected');
+        }
+      });
+      checkEmpty();
+    }
+
+    function checkEmpty() {
+      const container = document.getElementById('mock-queue-container');
+      const emptyState = document.getElementById('mock-empty-state');
+      if (container.querySelectorAll('.mock-queue-item').length === 0) {
+        if (emptyState) emptyState.style.display = 'block';
+      }
+    }
+  </script>
+</body>
+</html>

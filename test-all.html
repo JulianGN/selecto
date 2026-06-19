@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulação Completa - Área de Seleção Extension</title>
+  <style>
+    :root {
+      --bg: #f1f5f9; /* Default light theme */
+      --panel-bg: rgba(255, 255, 255, 0.75);
+      --border: #cbd5e1;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --accent: #6366f1;
+      --accent-hover: #4f46e5;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0b0f19; /* Default dark theme */
+        --panel-bg: rgba(22, 30, 49, 0.7);
+        --border: #1e293b;
+        --text: #f8fafc;
+        --text-muted: #64748b;
+      }
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      margin: 0;
+      padding: 40px 20px;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+    }
+
+    .container {
+      max-width: 900px;
+      width: 100%;
+      position: relative;
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #a5b4fc, var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
+    }
+
+    p.subtitle {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      margin-top: 0;
+      margin-bottom: 32px;
+      max-width: 600px;
+    }
+
+    .card {
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      backdrop-filter: blur(8px);
+    }
+
+    .card h2 {
+      margin-top: 0;
+      font-size: 1.25rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 12px;
+      margin-bottom: 16px;
+    }
+
+    .btn {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.95rem;
+      transition: background 0.2s;
+    }
+
+    .btn:hover {
+      background: var(--accent-hover);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    /* Grid for test elements */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    input[type="text"], select, textarea {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input[type="text"]:focus, select:focus, textarea:focus {
+      border-color: var(--accent);
+    }
+
+    .btn-nested {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-nested span {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+    }
+
+    /* Simulated Extension Icon & Popup Wrapper */
+    .simulated-extension-container {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      z-index: 2000000;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      opacity: 0.75;
+      transition: opacity 0.2s;
+    }
+
+    .simulated-extension-container:hover {
+      opacity: 1;
+    }
+
+    .extension-icon-btn {
+      width: 44px;
+      height: 44px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 50%;
+      cursor: grab;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #6366f1;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      transition: background 0.2s, color 0.2s;
+      user-select: none;
+    }
+
+    .extension-icon-btn:active {
+      cursor: grabbing;
+    }
+
+    .extension-icon-btn:hover {
+      background: #334155;
+      color: #818cf8;
+    }
+
+    /* Simulated Popup Panel */
+    .simulated-popup {
+      width: 280px;
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.35);
+      padding: 16px;
+      display: none; /* Toggled on icon click */
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+
+    .simulated-popup.show {
+      display: block;
+    }
+
+    .popup-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      padding-bottom: 12px;
+      margin-bottom: 14px;
+    }
+
+    .popup-header h2 {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .status-box {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(100, 116, 139, 0.05);
+      border: 1px solid var(--border);
+      padding: 10px 12px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+    }
+
+    .badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+
+    .badge-active {
+      background: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+    }
+
+    .badge-inactive {
+      background: rgba(239, 68, 68, 0.15);
+      color: #ef4444;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 38px;
+      height: 20px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #334155;
+      transition: .25s;
+      border-radius: 20px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 14px;
+      width: 14px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .25s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: var(--accent);
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(18px);
+    }
+
+    .counter-card {
+      background: rgba(99, 102, 241, 0.05);
+      border: 1px dashed rgba(99, 102, 241, 0.2);
+      padding: 12px;
+      border-radius: 8px;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .counter-number {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--accent);
+      margin-bottom: 2px;
+    }
+
+    .counter-label {
+      font-size: 10px;
+      color: var(--text-secondary);
+    }
+
+    .popup-footer {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      padding-top: 12px;
+    }
+
+    .popup-btn {
+      width: 100%;
+      font-size: 11px;
+      padding: 8px;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      border: none;
+      text-align: center;
+    }
+
+    .popup-btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .popup-btn-primary:hover {
+      background: var(--accent-hover);
+    }
+
+    .popup-btn-secondary {
+      background: rgba(100, 116, 139, 0.06);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    .popup-btn-secondary:hover {
+      background: rgba(100, 116, 139, 0.12);
+    }
+
+    .alert-banner {
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 24px;
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+
+    .alert-banner strong {
+      color: #a5b4fc;
+    }
+  </style>
+
+  <!-- MOCK CHROME EXTENSION RUNTIME PLUGINS -->
+  <script>
+    (function() {
+      // 1. Create a simulated chrome local storage using standard localStorage
+      const mockStorage = {
+        get: function(keys, callback) {
+          const result = {};
+          const keysArray = Array.isArray(keys) ? keys : [keys];
+          keysArray.forEach(key => {
+            const val = localStorage.getItem('mock_chrome_' + key);
+            result[key] = val ? JSON.parse(val) : undefined;
+          });
+          setTimeout(() => callback(result), 0);
+        },
+        set: function(obj, callback) {
+          const changes = {};
+          Object.entries(obj).forEach(([key, val]) => {
+            const oldVal = localStorage.getItem('mock_chrome_' + key);
+            const oldValue = oldVal ? JSON.parse(oldVal) : undefined;
+            localStorage.setItem('mock_chrome_' + key, JSON.stringify(val));
+            changes[key] = { oldValue, newValue: val };
+          });
+          
+          // Trigger storage listeners
+          mockOnChanged.listeners.forEach(listener => {
+            listener(changes, 'local');
+          });
+          if (callback) setTimeout(callback, 0);
+        }
+      };
+
+      const mockOnChanged = {
+        listeners: [],
+        addListener: function(callback) {
+          this.listeners.push(callback);
+        }
+      };
+
+      const mockOnMessage = {
+        listeners: [],
+        addListener: function(callback) {
+          this.listeners.push(callback);
+        }
+      };
+
+      // Expose simulated chrome object globally
+      window.chrome = {
+        storage: {
+          local: mockStorage,
+          onChanged: mockOnChanged
+        },
+        runtime: {
+          onMessage: mockOnMessage,
+          sendMessage: function(message, callback) {
+            if (message.action === 'get-tab-id') {
+              if (callback) setTimeout(() => callback({ tabId: 'mock' }), 0);
+              return;
+            }
+            // Simulated handling of sendMessage inside the page
+            if (message.action === 'set-icon-state') {
+              const iconBtn = document.getElementById('ext-icon-btn');
+              if (iconBtn) {
+                if (message.active) {
+                  iconBtn.style.color = '#10b981';
+                  iconBtn.style.borderColor = '#10b981';
+                  iconBtn.style.boxShadow = '0 0 14px rgba(16, 185, 129, 0.5)';
+                } else {
+                  iconBtn.style.color = '#6366f1';
+                  iconBtn.style.borderColor = '#334155';
+                  iconBtn.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
+                }
+              }
+            }
+            if (callback) setTimeout(() => callback({ success: true }), 0);
+          },
+          // Method to return extension assets paths
+          getURL: function(path) {
+            return path;
+          }
+        }
+      };
+
+      // Mock function to simulate background forwarding of popup messages
+      window.sendMockExtensionMessage = function(message) {
+        return new Promise((resolve) => {
+          let responded = false;
+          const sendResponse = (res) => {
+            responded = true;
+            resolve(res);
+          };
+          
+          mockOnMessage.listeners.forEach(listener => {
+            listener(message, {}, sendResponse);
+          });
+          
+          // Timeout fallback
+          setTimeout(() => { if (!responded) resolve(); }, 80);
+        });
+      };
+    })();
+  </script>
+</head>
+<body>
+
+  <!-- SIMULATED CHROME TOOLBAR & POPUP (Floating on left) -->
+  <div class="simulated-extension-container">
+    <button class="extension-icon-btn" id="ext-icon-btn" title="Simular clique no ícone da extensão">
+      <svg viewBox="0 0 128 128" width="22" height="22" fill="none">
+        <rect x="12" y="12" width="104" height="104" rx="20" stroke="currentColor" stroke-width="8" stroke-dasharray="14 10" />
+        <rect x="34" y="34" width="60" height="60" rx="10" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="6" />
+      </svg>
+    </button>
+
+    <div class="simulated-popup" id="ext-popup">
+      <div class="popup-header">
+        <h2>
+          <svg viewBox="0 0 128 128" width="16" height="16" fill="none" style="color: #6366f1;">
+            <rect x="12" y="12" width="104" height="104" rx="20" stroke="currentColor" stroke-width="8" stroke-dasharray="14 10" />
+            <rect x="34" y="34" width="60" height="60" rx="10" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="6" />
+          </svg>
+          Área de Seleção
+        </h2>
+        <span class="version" style="font-size: 9px; color: var(--text-muted);">MOCK POPUP</span>
+      </div>
+
+      <div class="status-box">
+        <div style="display: flex; flex-direction: column; gap: 3px;">
+          <span style="font-size: 11px; font-weight:600;">Modo Inspeção:</span>
+          <span id="popup-status-badge" class="badge badge-inactive">Inativo</span>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="popup-inspector-toggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="counter-card">
+        <div class="counter-number" id="popup-captured-count">0</div>
+        <div class="counter-label">elementos salvos no painel</div>
+      </div>
+
+      <div class="popup-footer">
+        <button id="popup-open-panel-btn" class="popup-btn popup-btn-primary">Abrir Painel Lateral</button>
+        <button id="popup-clear-storage-btn" class="popup-btn popup-btn-secondary">Resetar Simulação</button>
+        <div style="font-size: 8px; color: var(--text-muted); text-align: center; margin-top: 4px;">Atalho: <kbd>Alt + Shift + S</kbd></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TARGET PAGE CONTENT -->
+  <div class="container">
+    <h1>Simulador Completo da Extensão</h1>
+    <p class="subtitle">
+      Esta página simula a extensão instalada. O ícone flutuante no <strong>canto superior esquerdo</strong> abre o popup real da extensão, e o painel flutuante abrirá no **canto direito** ao selecionar ou abrir pelo popup!
+    </p>
+
+    <div class="alert-banner">
+      👉 <strong>Como Testar:</strong> Clique no ícone de extensão flutuante à esquerda para abrir o "Popup". Ative a inspeção por ele, ou use o atalho <strong><kbd>Alt + Shift + S</kbd></strong>. 
+      Passe o mouse na página para inspecionar, e clique em qualquer elemento para vê-lo aparecer na barra lateral que desliza na direita!
+    </div>
+
+    <!-- Interactive Elements to Select -->
+    <div class="card">
+      <h2>Elementos de Formulário</h2>
+      
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="reg-username">Input Usuário (ID: reg-username)</label>
+          <input type="text" id="reg-username" placeholder="Digite seu nome...">
+        </div>
+        
+        <div class="form-group">
+          <label for="reg-country">País de Residência (Select)</label>
+          <select id="reg-country">
+            <option>Brasil</option>
+            <option>Portugal</option>
+            <option>Outro</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 20px;">
+        <label for="reg-bio">Biografia (Textarea)</label>
+        <textarea id="reg-bio" rows="3" placeholder="Fale um pouco sobre você..."></textarea>
+      </div>
+
+      <div style="display: flex; gap: 12px; align-items: center;">
+        <button class="btn btn-nested" id="btn-submit-test">
+          <span>Icon</span>
+          Salvar Cadastro
+        </button>
+
+        <a href="#" class="btn btn-secondary" id="link-cancel-test">
+          Cancelar Ação
+        </a>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Outros Seletores Interessantes</h2>
+      <p style="margin-top: 0; color: var(--text-muted);">Tente selecionar estes elementos com prioridade ou usando Shift.</p>
+      
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div style="padding: 12px; background: rgba(255, 255, 255, 0.02); border-radius: 6px; border: 1px dashed var(--border);">
+          Um parágrafo de texto que possui uma <strong style="color: var(--accent);">palavra em negrito</strong> e um <em>termo em itálico</em> internos.
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+          <span class="badge" style="background: rgba(99,102,241,0.2); color: #a5b4fc; padding: 6px 10px;">Badge Simples</span>
+          <span class="badge" style="background: rgba(16,185,129,0.2); color: #a5b4fc; padding: 6px 10px;">Sucesso</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOAD SCRIPTS (FIRST THE SDK, THEN CONTENT SCRIPT) -->
+  <script src="package/selector-sdk.js"></script>
+  <script src="package/content.js"></script>
+
+  <!-- POPUP SIMULATION CONTROLLER -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const extIconBtn = document.getElementById('ext-icon-btn');
+      const extPopup = document.getElementById('ext-popup');
+      const popupInspectorToggle = document.getElementById('popup-inspector-toggle');
+      const popupStatusBadge = document.getElementById('popup-status-badge');
+      const popupCapturedCount = document.getElementById('popup-captured-count');
+      const popupOpenPanelBtn = document.getElementById('popup-open-panel-btn');
+      const popupClearStorageBtn = document.getElementById('popup-clear-storage-btn');
+
+      // Free dragging simulated extension container
+      const extContainer = document.querySelector('.simulated-extension-container');
+      let isDraggingExt = false;
+      let dragDistance = 0;
+      let extOffsetX = 0;
+      let extOffsetY = 0;
+      let startMouseX = 0;
+      let startMouseY = 0;
+
+      extIconBtn.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return; // Left click only
+        isDraggingExt = true;
+        startMouseX = e.clientX;
+        startMouseY = e.clientY;
+        dragDistance = 0;
+        
+        const rect = extContainer.getBoundingClientRect();
+        extOffsetX = e.clientX - rect.left;
+        extOffsetY = e.clientY - rect.top;
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        if (!isDraggingExt) return;
+        
+        const dx = e.clientX - startMouseX;
+        const dy = e.clientY - startMouseY;
+        dragDistance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (dragDistance > 4) {
+          let left = e.clientX - extOffsetX;
+          let top = e.clientY - extOffsetY;
+          
+          left = Math.max(10, Math.min(left, window.innerWidth - extContainer.offsetWidth - 10));
+          top = Math.max(10, Math.min(top, window.innerHeight - extContainer.offsetHeight - 10));
+          
+          extContainer.style.left = `${left}px`;
+          extContainer.style.top = `${top}px`;
+        }
+      });
+
+      window.addEventListener('mouseup', () => {
+        if (isDraggingExt) {
+          isDraggingExt = false;
+        }
+      });
+
+      // Toggle simulated popup visibility
+      extIconBtn.addEventListener('click', (e) => {
+        if (dragDistance > 4) {
+          e.stopPropagation();
+          e.preventDefault();
+          return;
+        }
+        e.stopPropagation();
+        extPopup.classList.toggle('show');
+      });
+
+      // Close popup if clicking elsewhere on the page
+      document.addEventListener('click', (e) => {
+        if (!extPopup.contains(e.target) && e.target !== extIconBtn && !extIconBtn.contains(e.target)) {
+          extPopup.classList.remove('show');
+        }
+      });
+
+      // Synchronize popup values on storage changes
+      chrome.storage.onChanged.addListener((changes) => {
+        updatePopupUI();
+      });
+
+      // Initial popup state sync
+      updatePopupUI();
+
+      // Trigger selection from popup toggle
+      popupInspectorToggle.addEventListener('change', async () => {
+        const response = await sendMockExtensionMessage({ action: 'toggle-selection' });
+        if (response) {
+          updatePopupBadge(response.active);
+        }
+      });
+
+      // Open Panel from popup button
+      popupOpenPanelBtn.addEventListener('click', () => {
+        sendMockExtensionMessage({ action: 'open-sidebar' });
+        extPopup.classList.remove('show');
+      });
+
+      // Reset local storage simulation
+      popupClearStorageBtn.addEventListener('click', () => {
+        localStorage.removeItem('mock_chrome_tab_mock');
+        
+        // Mock a refresh of the page to apply defaults
+        window.location.reload();
+      });
+
+      // Shortcut Alt+Shift+S simulator
+      window.addEventListener('keydown', (e) => {
+        if (e.altKey && e.shiftKey && e.key.toLowerCase() === 's') {
+          e.preventDefault();
+          sendMockExtensionMessage({ action: 'toggle-selection' }).then(response => {
+            if (response) {
+              updatePopupBadge(response.active);
+            }
+          });
+        }
+      });
+
+      function updatePopupUI() {
+        chrome.storage.local.get('tab_mock', (data) => {
+          const tabData = data['tab_mock'] || {};
+          const items = tabData.capturedItems || [];
+          popupCapturedCount.textContent = items.length;
+
+          const isActive = !!tabData.isSelectionActive;
+          popupInspectorToggle.checked = isActive;
+          updatePopupBadge(isActive);
+        });
+      }
+
+      function updatePopupBadge(isActive) {
+        if (isActive) {
+          popupStatusBadge.textContent = 'Ativo';
+          popupStatusBadge.className = 'badge badge-active';
+        } else {
+          popupStatusBadge.textContent = 'Inativo';
+          popupStatusBadge.className = 'badge badge-inactive';
+        }
+      }
+    });
+  </script>
+</body>
+</html>

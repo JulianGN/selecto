@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gerador de Assets - Área de Seleção</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: rgba(30, 41, 59, 0.7);
+      --border: #334155;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #10b981; /* Green color scheme as requested */
+      --accent-hover: #059669;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      margin: 0;
+      padding: 40px 20px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .container {
+      max-width: 800px;
+      width: 100%;
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #a7f3d0, var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
+    }
+
+    p.subtitle {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      margin-top: 0;
+      margin-bottom: 32px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+      backdrop-filter: blur(8px);
+    }
+
+    .card h2 {
+      margin-top: 0;
+      font-size: 1.25rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 12px;
+      margin-bottom: 20px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    .icon-preview-card {
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    .icon-svg-wrapper {
+      width: 128px;
+      height: 128px;
+      background: #090d16;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+
+    .icon-active-wrapper {
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.25);
+      border-color: rgba(16, 185, 129, 0.4);
+    }
+
+    .btn {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: background 0.2s;
+      width: 100%;
+      margin-top: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn:hover {
+      background: var(--accent-hover);
+    }
+
+    .btn-blue {
+      background: #4f46e5;
+    }
+    
+    .btn-blue:hover {
+      background: #4338ca;
+    }
+
+    .sizes-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: 100%;
+      margin-top: 12px;
+    }
+
+    .size-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.02);
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.04);
+      font-size: 0.85rem;
+    }
+
+    .size-label {
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .alert-banner {
+      background: rgba(16, 185, 129, 0.08);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      border-radius: 8px;
+      padding: 14px 18px;
+      margin-bottom: 24px;
+      font-size: 0.9rem;
+      line-height: 1.45;
+    }
+
+    .alert-banner strong {
+      color: #a7f3d0;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>Gerador de Ícones PNG</h1>
+    <p class="subtitle">Converta os ícones vetoriais SVG em PNGs de alta definição exigidos para a publicação.</p>
+
+    <div class="alert-banner">
+      💡 <strong>Como funciona:</strong> Ao clicar nos botões abaixo, a página renderizará os SVGs locais em um elemento <code>&lt;canvas&gt;</code> invisível nas resoluções corretas e baixará automaticamente os arquivos PNG correspondentes. Coloque-os na mesma pasta da sua extensão!
+    </div>
+
+    <div class="grid">
+      <!-- Icon Default Preview -->
+      <div class="icon-preview-card">
+        <h3>Ícone Padrão (Azul)</h3>
+        <p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 0;">Usado na barra de tarefas (Inativo)</p>
+        <div class="icon-svg-wrapper">
+          <!-- Inline SVG Blueprint -->
+          <svg id="svg-default" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="84" height="84">
+            <defs>
+              <linearGradient id="primaryGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#818cf8" />
+                <stop offset="100%" stop-color="#4f46e5" />
+              </linearGradient>
+              <linearGradient id="borderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#a5b4fc" />
+                <stop offset="100%" stop-color="#818cf8" />
+              </linearGradient>
+            </defs>
+            <rect x="12" y="12" width="104" height="104" rx="20" fill="none" stroke="url(#borderGrad)" stroke-width="8" stroke-dasharray="14 10" />
+            <rect x="34" y="34" width="60" height="60" rx="10" fill="url(#primaryGrad)" fill-opacity="0.2" stroke="url(#primaryGrad)" stroke-width="6" />
+          </svg>
+        </div>
+
+        <div class="sizes-container">
+          <div class="size-row">
+            <span class="size-label">16 x 16 px (Favicon)</span>
+            <button onclick="downloadPng('default', 16)" class="btn btn-blue" style="width: auto; margin: 0; padding: 4px 8px; font-size: 11px;">Baixar</button>
+          </div>
+          <div class="size-row">
+            <span class="size-label">48 x 48 px (Extensões)</span>
+            <button onclick="downloadPng('default', 48)" class="btn btn-blue" style="width: auto; margin: 0; padding: 4px 8px; font-size: 11px;">Baixar</button>
+          </div>
+          <div class="size-row">
+            <span class="size-label">128 x 128 px (Web Store)</span>
+            <button onclick="downloadPng('default', 128)" class="btn btn-blue" style="width: auto; margin: 0; padding: 4px 8px; font-size: 11px;">Baixar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Icon Active Preview -->
+      <div class="icon-preview-card">
+        <h3>Ícone Ativo (Verde)</h3>
+        <p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 0;">Usado na barra de tarefas (Ativo)</p>
+        <div class="icon-svg-wrapper icon-active-wrapper">
+          <!-- Inline SVG Active Blueprint -->
+          <svg id="svg-active" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="84" height="84">
+            <defs>
+              <linearGradient id="activeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#34d399" />
+                <stop offset="100%" stop-color="#10b981" />
+              </linearGradient>
+              <linearGradient id="activeBorderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#a7f3d0" />
+                <stop offset="100%" stop-color="#34d399" />
+              </linearGradient>
+            </defs>
+            <rect x="12" y="12" width="104" height="104" rx="20" fill="none" stroke="url(#activeBorderGrad)" stroke-width="8" stroke-dasharray="14 10" />
+            <rect x="34" y="34" width="60" height="60" rx="10" fill="url(#activeGrad)" fill-opacity="0.2" stroke="url(#activeGrad)" stroke-width="6" />
+          </svg>
+        </div>
+
+        <div class="sizes-container">
+          <div class="size-row">
+            <span class="size-label">16 x 16 px (Favicon)</span>
+            <button onclick="downloadPng('active', 16)" class="btn" style="width: auto; margin: 0; padding: 4px 8px; font-size: 11px;">Baixar</button>
+          </div>
+          <div class="size-row">
+            <span class="size-label">48 x 48 px (Extensões)</span>
+            <button onclick="downloadPng('active', 48)" class="btn" style="width: auto; margin: 0; padding: 4px 8px; font-size: 11px;">Baixar</button>
+          </div>
+          <div class="size-row">
+            <span class="size-label">128 x 128 px (Web Store)</span>
+            <button onclick="downloadPng('active', 128)" class="btn" style="width: auto; margin: 0; padding: 4px 8px; font-size: 11px;">Baixar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function downloadPng(type, size) {
+      // 1. Get the matching inline SVG elements
+      const svgId = type === 'default' ? 'svg-default' : 'svg-active';
+      const svgElement = document.getElementById(svgId);
+      
+      // Clone it to avoid modifying visual preview size
+      const clonedSvg = svgElement.cloneNode(true);
+      clonedSvg.setAttribute('width', size);
+      clonedSvg.setAttribute('height', size);
+
+      // Serialize SVG to XML string
+      const svgString = new XMLSerializer().serializeToString(clonedSvg);
+      
+      // 2. Build Image element
+      const img = new Image();
+      const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(svgBlob);
+
+      img.onload = function() {
+        // 3. Render into canvas
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        
+        // Anti-aliasing configurations
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        
+        ctx.drawImage(img, 0, 0, size, size);
+        
+        // 4. Trigger download
+        const pngUrl = canvas.toDataURL('image/png');
+        const a = document.createElement('a');
+        a.href = pngUrl;
+        
+        // Name configuration: icon-128.png or icon-active-128.png
+        const nameSuffix = type === 'default' ? '' : '-active';
+        a.download = `icon${nameSuffix}-${size}.png`;
+        
+        a.click();
+        
+        // Cleanup URLs
+        URL.revokeObjectURL(url);
+      };
+
+      img.src = url;
+    }
+  </script>
+</body>
+</html>
