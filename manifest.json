@@ -1,0 +1,45 @@
+{
+  "manifest_version": 3,
+  "name": "Selecto - Element Organizer & Selector Finder",
+  "version": "1.0.0",
+  "description": "Select and organize HTML elements for automated testing (CSS Selector and XPath).",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icon-16.png",
+      "32": "icon-48.png",
+      "48": "icon-48.png",
+      "128": "icon-128.png"
+    }
+  },
+  "icons": {
+    "16": "icon-16.png",
+    "32": "icon-48.png",
+    "48": "icon-48.png",
+    "128": "icon-128.png"
+  },
+  "commands": {
+    "toggle-selection": {
+      "suggested_key": {
+        "default": "Alt+Shift+S",
+        "mac": "Alt+Shift+S"
+      },
+      "description": "Toggle element selection mode"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["selector-sdk.js", "content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

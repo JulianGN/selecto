@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Selecto</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <!-- Header -->
+    <div class="popup-header">
+      <div class="logo-area">
+        <svg viewBox="0 0 128 128" width="22" height="22" fill="none" class="logo-svg">
+          <rect x="12" y="12" width="104" height="104" rx="20" stroke="currentColor" stroke-width="8" stroke-dasharray="14 10" />
+          <rect x="34" y="34" width="60" height="60" rx="10" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="6" />
+        </svg>
+        <h2>Selecto</h2>
+      </div>
+      <span class="version">v1.0.0</span>
+    </div>
+
+    <!-- Main Content -->
+    <div class="popup-body">
+      <!-- Status Box -->
+      <div class="status-box">
+        <div class="status-info">
+          <span class="status-label">Inspection Mode:</span>
+          <span id="status-badge" class="badge badge-inactive">Inactive</span>
+        </div>
+        <!-- Toggle Switch -->
+        <label class="switch">
+          <input type="checkbox" id="inspector-toggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <!-- Counter Card -->
+      <div class="counter-card">
+        <div class="counter-number" id="captured-count">0</div>
+        <div class="counter-label">elements in clipboard</div>
+      </div>
+    </div>
+
+    <!-- Actions Footer -->
+    <div class="popup-footer">
+      <button id="open-panel-btn" class="btn btn-primary">Open Panel on Page</button>
+      <button id="open-sandbox-btn" class="btn btn-secondary">Open Test Sandbox</button>
+      <div class="shortcut-tip">Shortcut: <kbd>Alt + Shift + S</kbd></div>
+    </div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

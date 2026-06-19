@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <!-- Beautiful active green gradient -->
+    <linearGradient id="activeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399" />
+      <stop offset="100%" stop-color="#10b981" />
+    </linearGradient>
+    <linearGradient id="borderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a7f3d0" />
+      <stop offset="100%" stop-color="#34d399" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Outer Selection Box (active pulsing dash style) -->
+  <rect x="12" y="12" width="104" height="104" rx="20" fill="none" stroke="url(#borderGrad)" stroke-width="8" stroke-dasharray="14 10" />
+  
+  <!-- Solid inner element highlight representing active target scanning -->
+  <rect x="34" y="34" width="60" height="60" rx="10" fill="url(#activeGrad)" fill-opacity="0.2" stroke="url(#activeGrad)" stroke-width="6" />
+</svg>
