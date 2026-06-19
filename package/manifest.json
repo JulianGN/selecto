@@ -34,12 +34,5 @@
       },
       "description": "Toggle element selection mode"
     }
-  },
-  "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-      "js": ["selector-sdk.js", "content.js"],
-      "run_at": "document_idle"
-    }
-  ]
+  }
 }

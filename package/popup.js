@@ -29,47 +29,23 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 2. Toggle inspector action
   toggleCheckbox.addEventListener('change', () => {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0] && tabs[0].id) {
-        chrome.tabs.sendMessage(tabs[0].id, { action: 'toggle-selection' }, (response) => {
-          if (chrome.runtime.lastError) {
-            console.log('Error communicating with content script: ', chrome.runtime.lastError.message);
-            // Revert state if we couldn't toggle
-            toggleCheckbox.checked = !toggleCheckbox.checked;
-            alert(
-              'Cannot inspect this page.\n\n' +
-              'This usually happens for one of the following reasons:\n' +
-              '1. You are on an internal Chrome page (e.g. chrome://extensions, chrome://newtab).\n' +
-              '2. You are on the Chrome Web Store (pages protected by browser security).\n' +
-              '3. This tab was already open before loading/reloading the extension. ' +
-              'To solve this, simply REFRESH this tab (press F5) and try again.'
-            );
-            return;
-          }
-          if (response) {
-            updateBadgeState(response.active);
-          }
-        });
-      }
+    if (!tabId) return;
+    ensureScriptInjected(tabId, () => {
+      chrome.tabs.sendMessage(tabId, { action: 'toggle-selection' }, (response) => {
+        if (response) {
+          updateBadgeState(response.active);
+        }
+      });
     });
   });
 
   // 3. Open Floating Sidebar panel button
   openPanelBtn.addEventListener('click', () => {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0] && tabs[0].id) {
-        chrome.tabs.sendMessage(tabs[0].id, { action: 'open-sidebar' }, () => {
-          if (chrome.runtime.lastError) {
-            alert(
-              'Cannot open the panel on this page.\n\n' +
-              'Make sure it is not an internal page (chrome://) and refresh the page (F5) ' +
-              'if it was opened before the extension was installed/reloaded.'
-            );
-            return;
-          }
-          window.close(); // Close popup after opening sidebar
-        });
-      }
+    if (!tabId) return;
+    ensureScriptInjected(tabId, () => {
+      chrome.tabs.sendMessage(tabId, { action: 'open-sidebar' }, () => {
+        window.close(); // Close popup after opening sidebar
+      });
     });
   });
 
@@ -78,6 +54,35 @@ document.addEventListener('DOMContentLoaded', async () => {
     chrome.tabs.create({ url: chrome.runtime.getURL('test-sdk.html') });
     window.close();
   });
+
+  // Helper to ensure script injection
+  function ensureScriptInjected(tabId, callback) {
+    chrome.tabs.sendMessage(tabId, { action: 'ping' }, (response) => {
+      if (chrome.runtime.lastError || !response || response.status !== 'alive') {
+        // Inject scripts programmatically
+        chrome.scripting.executeScript({
+          target: { tabId: tabId },
+          files: ['selector-sdk.js', 'content.js']
+        }).then(() => {
+          setTimeout(callback, 100);
+        }).catch(err => {
+          alert(
+            'Cannot inspect this page.\n\n' +
+            'This usually happens for one of the following reasons:\n' +
+            '1. You are on an internal Chrome page (e.g. chrome://extensions, chrome://newtab).\n' +
+            '2. You are on the Chrome Web Store (pages protected by browser security).\n' +
+            '3. This tab was already open before loading/reloading the extension. ' +
+            'To solve this, simply REFRESH this tab (press F5) and try again.\n\n' +
+            'Error detail: ' + err.message
+          );
+          toggleCheckbox.checked = !toggleCheckbox.checked;
+        });
+      } else {
+        // Already active
+        callback();
+      }
+    });
+  }
 
   /**
    * Reads data from local storage and updates popup visual values.

@@ -1382,7 +1382,9 @@
   // --- Synchronous Top-Level Chrome Message Listener ---
   if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-      if (message.action === 'toggle-selection') {
+      if (message.action === 'ping') {
+        sendResponse({ status: 'alive' });
+      } else if (message.action === 'toggle-selection') {
         toggleSelection();
         sendResponse({ success: true, active: isSelectionActive });
       } else if (message.action === 'open-sidebar') {
