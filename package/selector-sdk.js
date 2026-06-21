@@ -195,6 +195,8 @@
       this.onHover = options.onHover || (() => {});
       this.onSelect = options.onSelect || (() => {});
       this.excludeFilter = options.excludeFilter || (() => false);
+      this.enableFade = options.enableFade !== undefined ? options.enableFade : true;
+      this.fadeOpacity = options.fadeOpacity !== undefined ? options.fadeOpacity : 0.6;
 
       this.active = false;
       this.hoveredElement = null;
@@ -210,6 +212,36 @@
       this._handleKeyDown = this._handleKeyDown.bind(this);
       this._handleKeyUp = this._handleKeyUp.bind(this);
       this._updateOverlayPosition = this._updateOverlayPosition.bind(this);
+    }
+
+    /**
+     * Programmatically toggle the background fade/dimming effect.
+     * @param {boolean} enable - Whether to enable or disable the fade effect.
+     */
+    setEnableFade(enable) {
+      this.enableFade = enable;
+      this._updateOverlayShadow();
+    }
+
+    /**
+     * Programmatically update the opacity/intensity of the background fade.
+     * @param {number} opacity - The opacity value between 0 and 1.
+     */
+    setFadeOpacity(opacity) {
+      this.fadeOpacity = opacity;
+      this._updateOverlayShadow();
+    }
+
+    /**
+     * Updates the box-shadow style property of the overlay element.
+     * @private
+     */
+    _updateOverlayShadow() {
+      if (this.overlay) {
+        this.overlay.style.boxShadow = this.enableFade
+          ? `0 0 0 99999px rgba(15, 23, 42, ${this.fadeOpacity}), 0 0 15px rgba(99, 102, 241, 0.6)`
+          : '0 0 12px rgba(99, 102, 241, 0.3)';
+      }
     }
 
     /**
@@ -274,9 +306,9 @@
         borderRadius: '4px',
         transition: 'all 0.08s ease-out',
         boxSizing: 'border-box',
-        boxShadow: '0 0 12px rgba(99, 102, 241, 0.3)',
         display: 'none'
       });
+      this._updateOverlayShadow();
 
       // Simple tag label on overlay
       const label = document.createElement('span');

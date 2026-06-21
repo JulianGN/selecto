@@ -11,6 +11,8 @@
   let defaultFormat = 'css'; // 'css', 'xpath', 'playwright', 'cypress'
   let isSidebarOpen = false;
   let isSelectionActive = false;
+  let dimBackground = true;
+  let fadeOpacity = 0.6;
   let tabId = null;
 
   // DOM references inside Shadow DOM
@@ -34,9 +36,13 @@
     defaultFormat = state.defaultFormat || 'css';
     isSidebarOpen = state.isSidebarOpen || false;
     isSelectionActive = state.isSelectionActive || false;
+    dimBackground = state.dimBackground !== undefined ? state.dimBackground : true;
+    fadeOpacity = state.fadeOpacity !== undefined ? state.fadeOpacity : 0.6;
 
     // 2. Initialize ElementInspector from Selector SDK
     inspector = new ElementInspector({
+      enableFade: dimBackground,
+      fadeOpacity: fadeOpacity,
       excludeFilter: (el) => {
         // Exclude the extension wrapper, simulated popup/icon in simulation, and overlay highlight itself
         return el.id === 'selector-extension-root' || 
@@ -151,6 +157,19 @@
             </label>
           </div>
         </div>
+        <div class="setting-group" style="margin-top: 12px; margin-bottom: 16px;">
+          <label class="checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 11px; user-select: none; color: var(--text-secondary);">
+            <input type="checkbox" id="dim-background-checkbox" ${dimBackground ? 'checked' : ''} style="accent-color: var(--accent); margin: 0; width: 14px; height: 14px;">
+            Dim Background (Fade)
+          </label>
+          <div id="fade-intensity-container" style="margin-top: 8px; display: ${dimBackground ? 'flex' : 'none'}; flex-direction: column; gap: 4px;">
+            <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted);">
+              <span>Dim Intensity:</span>
+              <span id="fade-opacity-val">${Math.round(fadeOpacity * 100)}%</span>
+            </div>
+            <input type="range" id="fade-opacity-slider" min="0.1" max="0.9" step="0.05" value="${fadeOpacity}" style="accent-color: var(--accent); width: 100%; cursor: pointer; background: rgba(255,255,255,0.1); height: 4px; border-radius: 2px; outline: none; margin: 4px 0;">
+          </div>
+        </div>
         <button id="save-settings-btn" class="btn btn-primary btn-sm">Save Settings</button>
       </div>
 
@@ -260,16 +279,53 @@
       settingsPanel.classList.toggle('open');
     });
 
+    // 2b. Settings Panel interactive controls for dynamic fade intensity visibility
+    const dimCheckbox = shadowRoot.getElementById('dim-background-checkbox');
+    const intensityContainer = shadowRoot.getElementById('fade-intensity-container');
+    const opacitySlider = shadowRoot.getElementById('fade-opacity-slider');
+    const opacityValSpan = shadowRoot.getElementById('fade-opacity-val');
+
+    if (dimCheckbox && intensityContainer) {
+      dimCheckbox.addEventListener('change', (e) => {
+        intensityContainer.style.display = e.target.checked ? 'flex' : 'none';
+      });
+    }
+
+    if (opacitySlider && opacityValSpan) {
+      opacitySlider.addEventListener('input', (e) => {
+        opacityValSpan.textContent = `${Math.round(e.target.value * 100)}%`;
+      });
+    }
+
     // 3. Save Settings Button
     const saveSettingsBtn = shadowRoot.getElementById('save-settings-btn');
     saveSettingsBtn.addEventListener('click', () => {
       const selectedRadio = shadowRoot.querySelector('input[name="selector-format"]:checked');
+      
       if (selectedRadio) {
         defaultFormat = selectedRadio.value;
-        saveStorageData({ defaultFormat });
-        renderElementsList();
-        settingsPanel.classList.remove('open');
       }
+      if (dimCheckbox) {
+        dimBackground = dimCheckbox.checked;
+        if (inspector) {
+          inspector.setEnableFade(dimBackground);
+        }
+      }
+      if (opacitySlider) {
+        fadeOpacity = parseFloat(opacitySlider.value);
+        if (inspector) {
+          inspector.setFadeOpacity(fadeOpacity);
+        }
+      }
+
+      saveStorageData({
+        defaultFormat,
+        dimBackground,
+        fadeOpacity
+      });
+      
+      renderElementsList();
+      settingsPanel.classList.remove('open');
     });
 
     // 4. Close Panel button
@@ -1042,7 +1098,7 @@
       }
 
       .settings-drawer.open {
-        max-height: 200px;
+        max-height: 260px;
         padding: 14px 16px;
         border-bottom: 1px solid var(--border-color);
       }

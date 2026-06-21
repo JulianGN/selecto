@@ -182,9 +182,22 @@
     <!-- Control Card -->
     <div class="card" id="control-card">
       <h2>Inspector Controls</h2>
-      <div style="display: flex; gap: 12px; align-items: center;">
-        <button id="toggle-inspector" class="btn">Enable Inspector</button>
-        <span id="status-badge" style="color: #ef4444; font-weight: bold;">Inactive</span>
+      <div style="display: flex; gap: 24px; align-items: center; margin-bottom: 12px; flex-wrap: wrap;">
+        <div style="display: flex; gap: 12px; align-items: center;">
+          <button id="toggle-inspector" class="btn">Enable Inspector</button>
+          <span id="status-badge" style="color: #ef4444; font-weight: bold;">Inactive</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; font-size: 0.95rem; font-weight: 600; color: var(--text-muted);">
+            <input type="checkbox" id="toggle-fade" checked style="accent-color: var(--accent); width: 16px; height: 16px; margin: 0;">
+            Dim Background (Fade)
+          </label>
+          <div id="fade-opacity-control" style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">Intensity:</span>
+            <input type="range" id="fade-opacity-slider" min="0.1" max="0.9" step="0.05" value="0.6" style="accent-color: var(--accent); cursor: pointer; width: 100px;">
+            <span id="fade-opacity-val" style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600; min-width: 32px;">60%</span>
+          </div>
+        </div>
       </div>
       <p style="margin-bottom: 0; font-size: 0.9rem; color: var(--text-muted);">
         When enabled, hover elements to see outlines. Click an element to capture selectors. <br>
@@ -258,9 +271,11 @@
       const toggleBtn = document.getElementById('toggle-inspector');
       const statusBadge = document.getElementById('status-badge');
       const logPanel = document.getElementById('log-panel');
+      const toggleFade = document.getElementById('toggle-fade');
 
       // Initialize ElementInspector
       const inspector = new ElementInspector({
+        enableFade: toggleFade ? toggleFade.checked : true,
         // Custom excludeFilter to ignore the logs, controls, and red card
         excludeFilter: (el) => {
           const isControlCard = el.closest('#control-card');
@@ -289,6 +304,28 @@
           // For sandbox, we keep it active so the user can test multiple clicks
         }
       });
+
+      const opacityControl = document.getElementById('fade-opacity-control');
+      const opacitySlider = document.getElementById('fade-opacity-slider');
+      const opacityVal = document.getElementById('fade-opacity-val');
+
+      // Toggle Fade state dynamically
+      if (toggleFade) {
+        toggleFade.addEventListener('change', (e) => {
+          inspector.setEnableFade(e.target.checked);
+          if (opacityControl) {
+            opacityControl.style.display = e.target.checked ? 'flex' : 'none';
+          }
+        });
+      }
+
+      if (opacitySlider && opacityVal) {
+        opacitySlider.addEventListener('input', (e) => {
+          const val = parseFloat(e.target.value);
+          inspector.setFadeOpacity(val);
+          opacityVal.textContent = `${Math.round(val * 100)}%`;
+        });
+      }
 
       // Toggle Active State
       toggleBtn.addEventListener('click', () => {
