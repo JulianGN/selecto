@@ -86,6 +86,10 @@
 
     const root = document.createElement('div');
     root.id = 'selector-extension-root';
+    Object.assign(root.style, {
+      position: 'relative',
+      zIndex: '2147483647'
+    });
     
     // Inject stylesheet wrapper
     shadowRoot = root.attachShadow({ mode: 'closed' });
@@ -917,7 +921,7 @@
         box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
         backdrop-filter: blur(16px);
         -webkit-backdrop-filter: blur(16px);
-        z-index: 2147483646;
+        z-index: 2147483647;
         display: flex;
         flex-direction: column;
         overflow: hidden;

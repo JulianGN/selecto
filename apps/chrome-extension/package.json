@@ -1,0 +1,11 @@
+{
+  "name": "selecto-chrome-extension",
+  "version": "1.0.3",
+  "description": "Chrome Extension for Selecto",
+  "private": true,
+  "scripts": {
+    "copy-sdk": "node -e \"require('fs').copyFileSync('../../packages/selector-sdk/selector-sdk.js', './selector-sdk.js')\"",
+    "build": "npm run copy-sdk",
+    "dev": "npm run copy-sdk"
+  }
+}

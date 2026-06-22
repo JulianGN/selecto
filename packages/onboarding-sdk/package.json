@@ -1,0 +1,27 @@
+{
+  "name": "selecto-onboarding-sdk",
+  "version": "1.0.3",
+  "description": "Client-side onboarding tour and guide runner leveraging Selecto SDK.",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch"
+  },
+  "dependencies": {
+    "selecto-sdk": "^1.0.0"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0"
+  },
+  "keywords": [
+    "user-onboarding",
+    "onboarding",
+    "product-tours",
+    "walkthroughs"
+  ],
+  "author": "Selecto Authors",
+  "license": "MIT"
+}

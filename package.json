@@ -1,26 +1,19 @@
 {
-  "name": "selecto-sdk",
-  "version": "1.0.0",
-  "description": "A standalone, framework-agnostic DOM element inspector and CSS/XPath selector generator with configurable backdrop highlight/dimming. Ideal for automation tools, test sandboxes, and onboarding tours.",
-  "main": "package/selector-sdk.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 0"
-  },
-  "keywords": [
-    "dom-inspector",
-    "element-selector",
-    "css-selector",
-    "xpath",
-    "playwright-locator",
-    "cypress-locator",
-    "onboarding-tour",
-    "backdrop-highlight"
+  "name": "selecto-monorepo",
+  "version": "1.0.3",
+  "description": "Monorepo for Selecto: Chrome Extension, Onboarding Client SDK, and SaaS Dashboard",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
   ],
+  "scripts": {
+    "postinstall": "npm run copy-sdk --workspace=apps/chrome-extension",
+    "dev:dashboard": "npm run dev --workspace=apps/dashboard",
+    "build:sdk": "npm run build --workspace=packages/onboarding-sdk",
+    "build:selector": "npm run build --workspace=packages/selector-sdk",
+    "bump-version": "node scripts/bump-version.mjs"
+  },
   "author": "Selecto Authors",
-  "license": "MIT",
-  "files": [
-    "package/selector-sdk.js",
-    "README-SDK.md",
-    "package/LICENSE"
-  ]
+  "license": "MIT"
 }

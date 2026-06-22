@@ -1,1 +1,30 @@
-/package/*.zip
+# Workspaces and general
+node_modules/
+dist/
+out/
+build/
+*.zip
+
+# Next.js ignores
+.next/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Generated files in extension
+apps/chrome-extension/selector-sdk.js

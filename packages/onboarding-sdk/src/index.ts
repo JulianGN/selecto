@@ -1,0 +1,216 @@
+import { ElementInspector } from 'selecto-sdk';
+
+export interface TourStep {
+  id: string;
+  title: string;
+  content: string;
+  targetSelector?: string; // CSS selector of target element. If omitted, it's a central modal step
+  placement?: 'top' | 'bottom' | 'left' | 'right' | 'center';
+  triggerType?: 'click' | 'input' | 'next_button';
+  triggerValue?: string;
+}
+
+export interface TourOptions {
+  steps: TourStep[];
+  onStart?: () => void;
+  onStepChange?: (stepIndex: number, step: TourStep) => void;
+  onComplete?: () => void;
+  onSkip?: () => void;
+}
+
+export class OnboardingTour {
+  private steps: TourStep[];
+  private currentStepIndex: number = -1;
+  private options: TourOptions;
+  private active: boolean = false;
+  private tooltipElement: HTMLElement | null = null;
+  private overlayInspector: any = null; // ElementInspector instance for spotlight
+
+  constructor(options: TourOptions) {
+    this.options = options;
+    this.steps = options.steps;
+  }
+
+  public start(): void {
+    if (this.active || this.steps.length === 0) return;
+    this.active = true;
+    this.currentStepIndex = 0;
+    this.options.onStart?.();
+    this.renderStep();
+  }
+
+  public next(): void {
+    if (!this.active) return;
+    if (this.currentStepIndex < this.steps.length - 1) {
+      this.currentStepIndex++;
+      this.renderStep();
+    } else {
+      this.complete();
+    }
+  }
+
+  public prev(): void {
+    if (!this.active) return;
+    if (this.currentStepIndex > 0) {
+      this.currentStepIndex--;
+      this.renderStep();
+    }
+  }
+
+  public skip(): void {
+    this.cleanup();
+    this.options.onSkip?.();
+  }
+
+  public complete(): void {
+    this.cleanup();
+    this.options.onComplete?.();
+  }
+
+  private renderStep(): void {
+    const step = this.steps[this.currentStepIndex];
+    this.options.onStepChange?.(this.currentStepIndex, step);
+    
+    // Cleanup previous overlays/tooltips
+    this.cleanupUI();
+
+    if (step.targetSelector) {
+      const target = document.querySelector(step.targetSelector);
+      if (target) {
+        this.renderTooltip(target as HTMLElement, step);
+        this.applySpotlight(target as HTMLElement);
+      } else {
+        // Fallback: render as central modal if target not found
+        this.renderCentralModal(step);
+      }
+    } else {
+      this.renderCentralModal(step);
+    }
+  }
+
+  private renderTooltip(target: HTMLElement, step: TourStep): void {
+    // Basic tooltip UI creation in Shadow DOM or direct injection
+    // (For skeleton, just inject basic element)
+    const tooltip = document.createElement('div');
+    tooltip.id = 'selecto-onboarding-tooltip';
+    tooltip.style.position = 'absolute';
+    tooltip.style.backgroundColor = '#1e293b';
+    tooltip.style.color = '#ffffff';
+    tooltip.style.padding = '16px';
+    tooltip.style.borderRadius = '8px';
+    tooltip.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.3)';
+    tooltip.style.zIndex = '999999';
+    tooltip.style.maxWidth = '300px';
+
+    tooltip.innerHTML = `
+      <div style="font-weight: bold; margin-bottom: 8px;">${step.title}</div>
+      <div style="margin-bottom: 12px; font-size: 14px; color: #cbd5e1;">${step.content}</div>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 12px; color: #94a3b8;">${this.currentStepIndex + 1}/${this.steps.length}</span>
+        <div>
+          ${this.currentStepIndex > 0 ? '<button id="btn-prev" style="margin-right: 8px;">Back</button>' : ''}
+          <button id="btn-next">${this.currentStepIndex === this.steps.length - 1 ? 'Finish' : 'Next'}</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(tooltip);
+    this.tooltipElement = tooltip;
+
+    // Position tooltip near target
+    const rect = target.getBoundingClientRect();
+    const scrollX = window.scrollX || window.pageXOffset;
+    const scrollY = window.scrollY || window.pageYOffset;
+
+    const tooltipRect = tooltip.getBoundingClientRect();
+
+    // Default placement: bottom
+    let left = rect.left + scrollX + (rect.width - tooltipRect.width) / 2;
+    let top = rect.bottom + scrollY + 8;
+
+    if (step.placement === 'top') {
+      left = rect.left + scrollX + (rect.width - tooltipRect.width) / 2;
+      top = rect.top + scrollY - tooltipRect.height - 8;
+    } else if (step.placement === 'left') {
+      left = rect.left + scrollX - tooltipRect.width - 8;
+      top = rect.top + scrollY + (rect.height - tooltipRect.height) / 2;
+    } else if (step.placement === 'right') {
+      left = rect.right + scrollX + 8;
+      top = rect.top + scrollY + (rect.height - tooltipRect.height) / 2;
+    }
+
+    tooltip.style.left = `${left}px`;
+    tooltip.style.top = `${top}px`;
+
+    // Listeners
+    tooltip.querySelector('#btn-next')?.addEventListener('click', () => this.next());
+    tooltip.querySelector('#btn-prev')?.addEventListener('click', () => this.prev());
+  }
+
+  private renderCentralModal(step: TourStep): void {
+    // Render central modal
+    const modal = document.createElement('div');
+    modal.id = 'selecto-onboarding-modal';
+    modal.style.position = 'fixed';
+    modal.style.left = '50%';
+    modal.style.top = '50%';
+    modal.style.transform = 'translate(-50%, -50%)';
+    modal.style.backgroundColor = '#1e293b';
+    modal.style.color = '#ffffff';
+    modal.style.padding = '24px';
+    modal.style.borderRadius = '12px';
+    modal.style.boxShadow = '0 25px 50px -12px rgba(0, 0, 0, 0.5)';
+    modal.style.zIndex = '999999';
+    modal.style.maxWidth = '400px';
+    modal.style.width = '90%';
+
+    modal.innerHTML = `
+      <div style="font-weight: bold; font-size: 18px; margin-bottom: 12px;">${step.title}</div>
+      <div style="margin-bottom: 20px; font-size: 14px; color: #cbd5e1; line-height: 1.5;">${step.content}</div>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 12px; color: #94a3b8;">${this.currentStepIndex + 1}/${this.steps.length}</span>
+        <div>
+          ${this.currentStepIndex > 0 ? '<button id="btn-prev" style="margin-right: 8px;">Back</button>' : ''}
+          <button id="btn-next">${this.currentStepIndex === this.steps.length - 1 ? 'Finish' : 'Next'}</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+    this.tooltipElement = modal;
+
+    modal.querySelector('#btn-next')?.addEventListener('click', () => this.next());
+    modal.querySelector('#btn-prev')?.addEventListener('click', () => this.prev());
+  }
+
+  private applySpotlight(target: HTMLElement): void {
+    // Instantiate ElementInspector to apply backdrop dimming spotlight
+    if (!this.overlayInspector) {
+      this.overlayInspector = new ElementInspector({
+        enableFade: true,
+        fadeOpacity: 0.6,
+        showLabel: false
+      });
+    }
+    this.overlayInspector.highlightElement(target);
+  }
+
+  private cleanupUI(): void {
+    if (this.tooltipElement) {
+      this.tooltipElement.remove();
+      this.tooltipElement = null;
+    }
+    if (this.overlayInspector) {
+      this.overlayInspector.highlightElement(null);
+    }
+  }
+
+  private cleanup(): void {
+    this.active = false;
+    this.cleanupUI();
+    if (this.overlayInspector) {
+      this.overlayInspector.stop();
+      this.overlayInspector = null;
+    }
+  }
+}

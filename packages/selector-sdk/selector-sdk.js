@@ -200,6 +200,7 @@
       this.showLabel = options.showLabel !== undefined ? options.showLabel : true;
 
       this.active = false;
+      this.isProgrammaticHighlight = false;
       this.hoveredElement = null;
       this.overlay = null;
 
@@ -288,10 +289,12 @@
      */
     highlightElement(element) {
       if (element) {
+        this.isProgrammaticHighlight = true;
         this._createOverlay();
         this.hoveredElement = element;
         this._updateOverlayPosition();
       } else {
+        this.isProgrammaticHighlight = false;
         this.hoveredElement = null;
         this._hideOverlay();
         // Clean up DOM if inspector is not currently active
@@ -315,7 +318,7 @@
       Object.assign(this.overlay.style, {
         position: 'absolute',
         pointerEvents: 'none',
-        zIndex: '2147483647',
+        zIndex: '2147483646',
         border: '2px solid rgba(99, 102, 241, 0.95)', // Indigo border
         background: 'rgba(99, 102, 241, 0.08)',      // Light indigo wash
         borderRadius: '4px',
@@ -423,6 +426,8 @@
      * @private
      */
     _handleMouseMove(e) {
+      if (this.isProgrammaticHighlight) return;
+
       this.lastMouseX = e.clientX;
       this.lastMouseY = e.clientY;
 
@@ -535,6 +540,7 @@
      * @private
      */
     _handleKeyDown(e) {
+      if (this.isProgrammaticHighlight) return;
       if (e.key === 'Shift') {
         const element = document.elementFromPoint(this.lastMouseX, this.lastMouseY);
         const target = this._resolveTarget(element, true);
@@ -547,6 +553,7 @@
      * @private
      */
     _handleKeyUp(e) {
+      if (this.isProgrammaticHighlight) return;
       if (e.key === 'Shift') {
         const element = document.elementFromPoint(this.lastMouseX, this.lastMouseY);
         const target = this._resolveTarget(element, false);
