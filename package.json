@@ -11,8 +11,9 @@
     "postinstall": "npm run copy-sdk --workspace=apps/chrome-extension",
     "dev:dashboard": "npm run dev --workspace=apps/dashboard",
     "build:sdk": "npm run build --workspace=packages/onboarding-sdk",
-    "build:selector": "npm run build --workspace=packages/selector-sdk",
-    "bump-version": "node scripts/bump-version.mjs"
+    "bump-version": "node scripts/bump-version.mjs",
+    "publish:selector": "npm publish -w selecto-sdk --access public",
+    "publish:onboarding": "npm run build:sdk && npm publish -w selecto-onboarding-sdk --access public"
   },
   "author": "Selecto Authors",
   "license": "MIT"
