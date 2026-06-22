@@ -1,0 +1,26 @@
+{
+  "name": "selecto-sdk",
+  "version": "1.0.0",
+  "description": "A standalone, framework-agnostic DOM element inspector and CSS/XPath selector generator with configurable backdrop highlight/dimming. Ideal for automation tools, test sandboxes, and onboarding tours.",
+  "main": "package/selector-sdk.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 0"
+  },
+  "keywords": [
+    "dom-inspector",
+    "element-selector",
+    "css-selector",
+    "xpath",
+    "playwright-locator",
+    "cypress-locator",
+    "onboarding-tour",
+    "backdrop-highlight"
+  ],
+  "author": "Selecto Authors",
+  "license": "MIT",
+  "files": [
+    "package/selector-sdk.js",
+    "README-SDK.md",
+    "package/LICENSE"
+  ]
+}

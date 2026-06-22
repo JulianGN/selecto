@@ -13,6 +13,7 @@
   let isSelectionActive = false;
   let dimBackground = true;
   let fadeOpacity = 0.6;
+  let showLabel = true;
   let tabId = null;
 
   // DOM references inside Shadow DOM
@@ -38,11 +39,13 @@
     isSelectionActive = state.isSelectionActive || false;
     dimBackground = state.dimBackground !== undefined ? state.dimBackground : true;
     fadeOpacity = state.fadeOpacity !== undefined ? state.fadeOpacity : 0.6;
+    showLabel = state.showLabel !== undefined ? state.showLabel : true;
 
     // 2. Initialize ElementInspector from Selector SDK
     inspector = new ElementInspector({
       enableFade: dimBackground,
       fadeOpacity: fadeOpacity,
+      showLabel: showLabel,
       excludeFilter: (el) => {
         // Exclude the extension wrapper, simulated popup/icon in simulation, and overlay highlight itself
         return el.id === 'selector-extension-root' || 
@@ -169,6 +172,12 @@
             </div>
             <input type="range" id="fade-opacity-slider" min="0.1" max="0.9" step="0.05" value="${fadeOpacity}" style="accent-color: var(--accent); width: 100%; cursor: pointer; background: rgba(255,255,255,0.1); height: 4px; border-radius: 2px; outline: none; margin: 4px 0;">
           </div>
+        </div>
+        <div class="setting-group" style="margin-top: 12px; margin-bottom: 16px;">
+          <label class="checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 11px; user-select: none; color: var(--text-secondary);">
+            <input type="checkbox" id="show-label-checkbox" ${showLabel ? 'checked' : ''} style="accent-color: var(--accent); margin: 0; width: 14px; height: 14px;">
+            Show Element Labels
+          </label>
         </div>
         <button id="save-settings-btn" class="btn btn-primary btn-sm">Save Settings</button>
       </div>
@@ -301,6 +310,7 @@
     const saveSettingsBtn = shadowRoot.getElementById('save-settings-btn');
     saveSettingsBtn.addEventListener('click', () => {
       const selectedRadio = shadowRoot.querySelector('input[name="selector-format"]:checked');
+      const showLabelCheckbox = shadowRoot.getElementById('show-label-checkbox');
       
       if (selectedRadio) {
         defaultFormat = selectedRadio.value;
@@ -317,11 +327,18 @@
           inspector.setFadeOpacity(fadeOpacity);
         }
       }
+      if (showLabelCheckbox) {
+        showLabel = showLabelCheckbox.checked;
+        if (inspector) {
+          inspector.setShowLabel(showLabel);
+        }
+      }
 
       saveStorageData({
         defaultFormat,
         dimBackground,
-        fadeOpacity
+        fadeOpacity,
+        showLabel
       });
       
       renderElementsList();
@@ -1098,7 +1115,7 @@
       }
 
       .settings-drawer.open {
-        max-height: 260px;
+        max-height: 310px;
         padding: 14px 16px;
         border-bottom: 1px solid var(--border-color);
       }

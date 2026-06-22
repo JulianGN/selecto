@@ -187,7 +187,7 @@
           <button id="toggle-inspector" class="btn">Enable Inspector</button>
           <span id="status-badge" style="color: #ef4444; font-weight: bold;">Inactive</span>
         </div>
-        <div style="display: flex; align-items: center; gap: 16px;">
+        <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
           <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; font-size: 0.95rem; font-weight: 600; color: var(--text-muted);">
             <input type="checkbox" id="toggle-fade" checked style="accent-color: var(--accent); width: 16px; height: 16px; margin: 0;">
             Dim Background (Fade)
@@ -197,6 +197,10 @@
             <input type="range" id="fade-opacity-slider" min="0.1" max="0.9" step="0.05" value="0.6" style="accent-color: var(--accent); cursor: pointer; width: 100px;">
             <span id="fade-opacity-val" style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600; min-width: 32px;">60%</span>
           </div>
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; font-size: 0.95rem; font-weight: 600; color: var(--text-muted); margin-left: 8px;">
+            <input type="checkbox" id="toggle-label" checked style="accent-color: var(--accent); width: 16px; height: 16px; margin: 0;">
+            Show Element Labels
+          </label>
         </div>
       </div>
       <p style="margin-bottom: 0; font-size: 0.9rem; color: var(--text-muted);">
@@ -272,10 +276,12 @@
       const statusBadge = document.getElementById('status-badge');
       const logPanel = document.getElementById('log-panel');
       const toggleFade = document.getElementById('toggle-fade');
+      const toggleLabel = document.getElementById('toggle-label');
 
       // Initialize ElementInspector
       const inspector = new ElementInspector({
         enableFade: toggleFade ? toggleFade.checked : true,
+        showLabel: toggleLabel ? toggleLabel.checked : true,
         // Custom excludeFilter to ignore the logs, controls, and red card
         excludeFilter: (el) => {
           const isControlCard = el.closest('#control-card');
@@ -316,6 +322,13 @@
           if (opacityControl) {
             opacityControl.style.display = e.target.checked ? 'flex' : 'none';
           }
+        });
+      }
+
+      // Toggle Label visibility dynamically
+      if (toggleLabel) {
+        toggleLabel.addEventListener('change', (e) => {
+          inspector.setShowLabel(e.target.checked);
         });
       }
 

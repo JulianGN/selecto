@@ -197,6 +197,7 @@
       this.excludeFilter = options.excludeFilter || (() => false);
       this.enableFade = options.enableFade !== undefined ? options.enableFade : true;
       this.fadeOpacity = options.fadeOpacity !== undefined ? options.fadeOpacity : 0.6;
+      this.showLabel = options.showLabel !== undefined ? options.showLabel : true;
 
       this.active = false;
       this.hoveredElement = null;
@@ -230,6 +231,20 @@
     setFadeOpacity(opacity) {
       this.fadeOpacity = opacity;
       this._updateOverlayShadow();
+    }
+
+    /**
+     * Programmatically show or hide the element tag labels over the highlighted area.
+     * @param {boolean} show - Whether to display element labels.
+     */
+    setShowLabel(show) {
+      this.showLabel = show;
+      if (this.overlay) {
+        const label = this.overlay.querySelector('#selector-sdk-overlay-label');
+        if (label) {
+          label.style.display = this.showLabel ? 'block' : 'none';
+        }
+      }
     }
 
     /**
@@ -327,7 +342,8 @@
         fontWeight: '600',
         whiteSpace: 'nowrap',
         pointerEvents: 'none',
-        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.15)'
+        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.15)',
+        display: this.showLabel ? 'block' : 'none'
       });
       
       this.overlay.appendChild(label);
@@ -542,5 +558,10 @@
   // Export to global scope
   global.SelectorGenerator = SelectorGenerator;
   global.ElementInspector = ElementInspector;
+
+  // Support CommonJS/Node module exports
+  if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
+    module.exports = { SelectorGenerator, ElementInspector };
+  }
 
 })(typeof window !== 'undefined' ? window : this);
