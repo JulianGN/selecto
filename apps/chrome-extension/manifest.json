@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "Selecto - Element Organizer & Selector Finder",
-  "version": "1.0.3",
-  "description": "Select and organize HTML elements for automated testing (CSS Selector and XPath).",
+  "name": "__MSG_extName__",
+  "version": "1.1.0",
+  "description": "__MSG_extDescription__",
+  "default_locale": "en",
   "permissions": [
     "storage",
     "activeTab",
@@ -32,7 +33,7 @@
         "default": "Alt+Shift+S",
         "mac": "Alt+Shift+S"
       },
-      "description": "Toggle element selection mode"
+      "description": "__MSG_toggleSelection__"
     }
   }
 }

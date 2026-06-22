@@ -1,6 +1,6 @@
 {
   "name": "selecto-onboarding-sdk",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "description": "Client-side onboarding tour and guide runner leveraging Selecto SDK.",
   "main": "dist/index.js",
   "module": "dist/index.mjs",

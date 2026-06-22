@@ -1,6 +1,6 @@
 {
   "name": "selecto-sdk",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "description": "A standalone, framework-agnostic DOM element inspector and CSS/XPath selector generator with configurable backdrop highlight/dimming. Ideal for automation tools, test sandboxes, and onboarding tours.",
   "main": "selector-sdk.js",
   "keywords": [

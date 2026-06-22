@@ -32,11 +32,11 @@ export async function getDashboardData() {
         totalEvents,
       }
     };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error in getDashboardData:", error);
     return {
       success: false,
-      error: error.message,
+      error: (error as Error).message,
       stats: { totalFlows: 0, activeFlows: 0, totalSteps: 0, totalEvents: 0 }
     };
   }
@@ -45,9 +45,8 @@ export async function getDashboardData() {
 export async function getFlowsList() {
   try {
     const allFlows = await db.select().from(schema.flows);
-    
     const flowsWithSteps = await Promise.all(
-      allFlows.map(async (flow: any) => {
+      allFlows.map(async (flow: typeof schema.flows.$inferSelect) => {
         const steps = await db
           .select()
           .from(schema.steps)
@@ -61,9 +60,9 @@ export async function getFlowsList() {
     );
 
     return { success: true, flows: flowsWithSteps };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error in getFlowsList:", error);
-    return { success: false, error: error.message, flows: [] };
+    return { success: false, error: (error as Error).message, flows: [] };
   }
 }
 
@@ -76,9 +75,9 @@ export async function toggleFlowAction(id: string, isActive: boolean) {
     
     revalidatePath('/');
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error in toggleFlowAction:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error as Error).message };
   }
 }
 
@@ -88,9 +87,9 @@ export async function deleteFlowAction(id: string) {
     
     revalidatePath('/');
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error in deleteFlowAction:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error as Error).message };
   }
 }
 
@@ -112,7 +111,7 @@ export async function saveFlowAction(formData: {
     const flowId = formData.id || crypto.randomUUID();
     const { name, description, isActive, steps } = formData;
 
-    await db.transaction(async (tx: any) => {
+    await db.transaction(async (tx: { select: Function; insert: Function; update: Function; delete: Function }) => {
       // 1. Check if flow exists
       const existingFlow = await tx.select().from(schema.flows).where(eq(schema.flows.id, flowId));
 
@@ -155,8 +154,8 @@ export async function saveFlowAction(formData: {
 
     revalidatePath('/');
     return { success: true, flowId };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error in saveFlowAction:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error as Error).message };
   }
 }

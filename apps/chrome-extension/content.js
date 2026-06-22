@@ -118,22 +118,22 @@
             <h3>Selecto</h3>
             <div class="status-indicator">
               <span class="status-dot ${isSelectionActive ? 'active' : ''}"></span>
-              <span class="status-text">${isSelectionActive ? 'Inspector Active' : 'Inspector Inactive'}</span>
+              <span class="status-text">${isSelectionActive ? chrome.i18n.getMessage('inspectorActive') : chrome.i18n.getMessage('inspectorInactive')}</span>
             </div>
           </div>
         </div>
         <div class="header-actions">
-          <button id="gear-btn" title="Configurações" class="icon-btn">
+          <button id="gear-btn" title="${chrome.i18n.getMessage('settingsBtnTitle')}" class="icon-btn">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
           </button>
-          <button id="close-sidebar-btn" title="Fechar Painel" class="icon-btn">
+          <button id="close-sidebar-btn" title="${chrome.i18n.getMessage('closeSidebarBtnTitle')}" class="icon-btn">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
       </div>
 
       <div class="sidebar-controls">
-        <span class="control-label">Enable Selection:</span>
+        <span class="control-label">${chrome.i18n.getMessage('enableSelection')}</span>
         <label class="switch">
           <input type="checkbox" id="inspector-toggle-checkbox" ${isSelectionActive ? 'checked' : ''}>
           <span class="slider"></span>
@@ -142,9 +142,9 @@
 
       <!-- Settings Panel (hidden by default) -->
       <div id="settings-panel" class="settings-drawer">
-        <h4>Selector Settings</h4>
+        <h4>${chrome.i18n.getMessage('selectorSettings')}</h4>
         <div class="setting-group">
-          <label>Output Format:</label>
+          <label>${chrome.i18n.getMessage('outputFormat')}</label>
           <div class="radio-options">
             <label class="radio-label">
               <input type="radio" name="selector-format" value="css" ${defaultFormat === 'css' ? 'checked' : ''}>
@@ -167,11 +167,11 @@
         <div class="setting-group" style="margin-top: 12px; margin-bottom: 16px;">
           <label class="checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 11px; user-select: none; color: var(--text-secondary);">
             <input type="checkbox" id="dim-background-checkbox" ${dimBackground ? 'checked' : ''} style="accent-color: var(--accent); margin: 0; width: 14px; height: 14px;">
-            Dim Background (Fade)
+            ${chrome.i18n.getMessage('dimBackground')}
           </label>
           <div id="fade-intensity-container" style="margin-top: 8px; display: ${dimBackground ? 'flex' : 'none'}; flex-direction: column; gap: 4px;">
             <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted);">
-              <span>Dim Intensity:</span>
+              <span>${chrome.i18n.getMessage('dimIntensity')}</span>
               <span id="fade-opacity-val">${Math.round(fadeOpacity * 100)}%</span>
             </div>
             <input type="range" id="fade-opacity-slider" min="0.1" max="0.9" step="0.05" value="${fadeOpacity}" style="accent-color: var(--accent); width: 100%; cursor: pointer; background: rgba(255,255,255,0.1); height: 4px; border-radius: 2px; outline: none; margin: 4px 0;">
@@ -180,10 +180,10 @@
         <div class="setting-group" style="margin-top: 12px; margin-bottom: 16px;">
           <label class="checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 11px; user-select: none; color: var(--text-secondary);">
             <input type="checkbox" id="show-label-checkbox" ${showLabel ? 'checked' : ''} style="accent-color: var(--accent); margin: 0; width: 14px; height: 14px;">
-            Show Element Labels
+            ${chrome.i18n.getMessage('showElementLabels')}
           </label>
         </div>
-        <button id="save-settings-btn" class="btn btn-primary btn-sm">Save Settings</button>
+        <button id="save-settings-btn" class="btn btn-primary btn-sm">${chrome.i18n.getMessage('saveSettings')}</button>
       </div>
 
       <!-- Scrollable Elements List -->
@@ -192,8 +192,8 @@
           <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity: 0.3; margin-bottom: 12px;">
             <circle cx="12" cy="12" r="10"/><path d="M12 8v8"/><path d="M8 12h8"/>
           </svg>
-          <p>No elements captured yet.</p>
-          <span style="font-size: 11px; color: var(--text-muted); display: block; margin-top: 4px;">Enable the inspector and click elements on the page.</span>
+          <p>${chrome.i18n.getMessage('noElementsCaptured')}</p>
+          <span style="font-size: 11px; color: var(--text-muted); display: block; margin-top: 4px;">${chrome.i18n.getMessage('noElementsCapturedSub')}</span>
         </div>
         <div id="elements-list" class="elements-list">
           <!-- Items injected dynamically -->
@@ -202,9 +202,9 @@
 
       <!-- Sidebar Footer -->
       <div class="sidebar-footer">
-        <button id="copy-all-btn" class="btn btn-secondary ${capturedItems.length === 0 ? 'disabled' : ''}">Copy All</button>
-        <button id="export-json-btn" class="btn btn-primary ${capturedItems.length === 0 ? 'disabled' : ''}">Export</button>
-        <button id="clear-all-btn" class="btn btn-danger ${capturedItems.length === 0 ? 'disabled' : ''}" title="Clear All">
+        <button id="copy-all-btn" class="btn btn-secondary ${capturedItems.length === 0 ? 'disabled' : ''}">${chrome.i18n.getMessage('copyAll')}</button>
+        <button id="export-json-btn" class="btn btn-primary ${capturedItems.length === 0 ? 'disabled' : ''}">${chrome.i18n.getMessage('export')}</button>
+        <button id="clear-all-btn" class="btn btn-danger ${capturedItems.length === 0 ? 'disabled' : ''}" title="${chrome.i18n.getMessage('clearAll')}">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
         </button>
       </div>
@@ -364,7 +364,7 @@
         return formatSelectorWithComment(item, defaultFormat);
       }).join('\n\n');
 
-      copyTextToClipboard(selectors, copyAllBtn, 'Copied!', 'Copy All');
+      copyTextToClipboard(selectors, copyAllBtn, chrome.i18n.getMessage('copied'), chrome.i18n.getMessage('copyAll'));
     });
 
     // 6. Export JSON Button
@@ -398,7 +398,7 @@
     const clearBtn = shadowRoot.getElementById('clear-all-btn');
     clearBtn.addEventListener('click', () => {
       if (capturedItems.length === 0) return;
-      if (confirm('Are you sure you want to clear all captured elements?')) {
+      if (confirm(chrome.i18n.getMessage('clearConfirm'))) {
         capturedItems = [];
         saveStorageData({ capturedItems });
         renderElementsList();
@@ -448,29 +448,29 @@
 
       itemEl.innerHTML = `
         <div class="item-drag-meta">
-          <div class="drag-grip" title="Drag to reorder">
+          <div class="drag-grip" title="${chrome.i18n.getMessage('dragGripTitle')}">
             <span></span><span></span>
             <span></span><span></span>
             <span></span><span></span>
           </div>
           <span class="tag-badge">${item.tagName}</span>
           <div class="reorder-controls">
-            <button class="reorder-btn move-up" title="Move up" ${index === 0 ? 'disabled' : ''}>▲</button>
-            <button class="reorder-btn move-down" title="Move down" ${index === capturedItems.length - 1 ? 'disabled' : ''}>▼</button>
+            <button class="reorder-btn move-up" title="${chrome.i18n.getMessage('moveUpTitle')}" ${index === 0 ? 'disabled' : ''}>▲</button>
+            <button class="reorder-btn move-down" title="${chrome.i18n.getMessage('moveDownTitle')}" ${index === capturedItems.length - 1 ? 'disabled' : ''}>▼</button>
           </div>
         </div>
 
         <div class="item-body">
-          <input type="text" class="rename-input" value="${escapeHtml(item.name)}" placeholder="Rename element...">
+          <input type="text" class="rename-input" value="${escapeHtml(item.name)}" placeholder="${chrome.i18n.getMessage('renamePlaceholder')}">
           <div class="selector-display" title="${escapeHtml(activeSelector)}">${escapeHtml(activeSelector)}</div>
         </div>
 
         <div class="item-actions">
-          <button class="action-copy-btn btn-action" title="Copy Selector">
+          <button class="action-copy-btn btn-action" title="${chrome.i18n.getMessage('copySelectorTitle')}">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
           </button>
-          <button class="action-delete-btn btn-action" title="Remove">
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          <button class="action-delete-btn btn-action" title="${chrome.i18n.getMessage('removeTitle')}">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
           </button>
         </div>
       `;
@@ -684,7 +684,7 @@
     const indicatorDot = shadowRoot.querySelector('.status-dot');
     const indicatorText = shadowRoot.querySelector('.status-text');
     if (indicatorDot) indicatorDot.className = 'status-dot active';
-    if (indicatorText) indicatorText.textContent = 'Inspector Active';
+    if (indicatorText) indicatorText.textContent = chrome.i18n.getMessage('inspectorActive');
 
     // Update Extension action icon state
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
@@ -704,7 +704,7 @@
     const indicatorDot = shadowRoot.querySelector('.status-dot');
     const indicatorText = shadowRoot.querySelector('.status-text');
     if (indicatorDot) indicatorDot.className = 'status-dot';
-    if (indicatorText) indicatorText.textContent = 'Inspector Inactive';
+    if (indicatorText) indicatorText.textContent = chrome.i18n.getMessage('inspectorInactive');
 
     // Update Extension action icon state
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
@@ -741,7 +741,7 @@
   /**
    * Copies string content to system clipboard with visual button state updates.
    */
-  function copyTextToClipboard(text, btnElement, successMsg = 'Copied!', originalMsg = '') {
+  function copyTextToClipboard(text, btnElement, successMsg = chrome.i18n.getMessage('copied') || 'Copied!', originalMsg = '') {
     // 1. Direct API Copy
     navigator.clipboard.writeText(text)
       .then(() => showCopySuccess(btnElement, successMsg, originalMsg))

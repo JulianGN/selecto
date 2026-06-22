@@ -1,0 +1,146 @@
+{
+  "extName": {
+    "message": "Selecto - Organizador de Elementos & Buscador de Seletores",
+    "description": "The name of the extension"
+  },
+  "extDescription": {
+    "message": "Selecione e organize elementos HTML para testes automatizados (CSS Selector e XPath).",
+    "description": "The description of the extension"
+  },
+  "toggleSelection": {
+    "message": "Alternar modo de seleção de elementos",
+    "description": "Description of the keyboard shortcut command to toggle element selection"
+  },
+  "inspectionMode": {
+    "message": "Modo de Inspeção:",
+    "description": "Label for inspection mode status"
+  },
+  "statusActive": {
+    "message": "Ativo",
+    "description": "Status active text"
+  },
+  "statusInactive": {
+    "message": "Inativo",
+    "description": "Status inactive text"
+  },
+  "elementsInClipboard": {
+    "message": "elementos na área de transferência",
+    "description": "Label under elements counter"
+  },
+  "openPanelOnPage": {
+    "message": "Abrir Painel na Página",
+    "description": "Button to open sidebar panel"
+  },
+  "openTestSandbox": {
+    "message": "Abrir Sandbox de Teste",
+    "description": "Button to open test sandbox tab"
+  },
+  "shortcutTip": {
+    "message": "Atalho:",
+    "description": "Shortcut tip label"
+  },
+  "cannotInspectPage": {
+    "message": "Não é possível inspecionar esta página.\n\nIsso geralmente acontece por um dos seguintes motivos:\n1. Você está em uma página interna do Chrome (ex: chrome://extensions, chrome://newtab).\n2. Você está na Chrome Web Store (páginas protegidas por segurança do navegador).\n3. Esta guia já estava aberta antes de carregar/recarregar a extensão. Para resolver isso, simplesmente ATUALIZE esta guia (pressione F5) e tente novamente.",
+    "description": "Alert message when extension fails to inject scripts"
+  },
+  "errorDetail": {
+    "message": "Detalhe do erro: ",
+    "description": "Prefix for error details in the alert message"
+  },
+  "inspectorActive": {
+    "message": "Inspetor Ativo",
+    "description": "Text showing inspector is active in sidebar"
+  },
+  "inspectorInactive": {
+    "message": "Inspetor Inativo",
+    "description": "Text showing inspector is inactive in sidebar"
+  },
+  "settingsBtnTitle": {
+    "message": "Configurações",
+    "description": "Tooltip for settings gear button"
+  },
+  "closeSidebarBtnTitle": {
+    "message": "Fechar Painel",
+    "description": "Tooltip for closing sidebar button"
+  },
+  "enableSelection": {
+    "message": "Habilitar Seleção:",
+    "description": "Label for toggle checkbox"
+  },
+  "selectorSettings": {
+    "message": "Configurações do Seletor",
+    "description": "Title of settings drawer"
+  },
+  "outputFormat": {
+    "message": "Formato de Saída:",
+    "description": "Label for selector formats selection"
+  },
+  "dimBackground": {
+    "message": "Escurecer Fundo (Fade)",
+    "description": "Label for background dimming setting"
+  },
+  "dimIntensity": {
+    "message": "Intensidade do Fade:",
+    "description": "Label for background dimming intensity setting"
+  },
+  "showElementLabels": {
+    "message": "Mostrar Rótulos dos Elementos",
+    "description": "Label for show element labels overlay setting"
+  },
+  "saveSettings": {
+    "message": "Salvar Configurações",
+    "description": "Button text to save settings"
+  },
+  "noElementsCaptured": {
+    "message": "Nenhum elemento capturado ainda.",
+    "description": "Empty state title"
+  },
+  "noElementsCapturedSub": {
+    "message": "Ative o inspetor e clique nos elementos da página.",
+    "description": "Empty state description"
+  },
+  "copyAll": {
+    "message": "Copiar Todos",
+    "description": "Button to copy all selectors"
+  },
+  "export": {
+    "message": "Exportar",
+    "description": "Button to export captured selectors"
+  },
+  "clearAll": {
+    "message": "Limpar Todos",
+    "description": "Button to clear all captured selectors"
+  },
+  "clearConfirm": {
+    "message": "Tem certeza de que deseja limpar todos os elementos capturados?",
+    "description": "Confirmation prompt before clearing list"
+  },
+  "dragGripTitle": {
+    "message": "Arrastar para reordenar",
+    "description": "Tooltip for list item drag handle"
+  },
+  "moveUpTitle": {
+    "message": "Mover para cima",
+    "description": "Tooltip for list item move up button"
+  },
+  "moveDownTitle": {
+    "message": "Mover para baixo",
+    "description": "Tooltip for list item move down button"
+  },
+  "renamePlaceholder": {
+    "message": "Renomear elemento...",
+    "description": "Placeholder for renaming input field"
+  },
+  "copySelectorTitle": {
+    "message": "Copiar Seletor",
+    "description": "Tooltip for copying single selector"
+  },
+  "removeTitle": {
+    "message": "Remover",
+    "description": "Tooltip for removing single list item"
+  },
+  "copied": {
+    "message": "Copiado!",
+    "description": "Temporary success text after copy"
+  }
+}

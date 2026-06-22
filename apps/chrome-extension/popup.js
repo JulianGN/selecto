@@ -3,6 +3,8 @@
  */
 
 document.addEventListener('DOMContentLoaded', async () => {
+  localizeUI();
+
   const toggleCheckbox = document.getElementById('inspector-toggle');
   const statusBadge = document.getElementById('status-badge');
   const capturedCountEl = document.getElementById('captured-count');
@@ -67,13 +69,8 @@ document.addEventListener('DOMContentLoaded', async () => {
           setTimeout(callback, 100);
         }).catch(err => {
           alert(
-            'Cannot inspect this page.\n\n' +
-            'This usually happens for one of the following reasons:\n' +
-            '1. You are on an internal Chrome page (e.g. chrome://extensions, chrome://newtab).\n' +
-            '2. You are on the Chrome Web Store (pages protected by browser security).\n' +
-            '3. This tab was already open before loading/reloading the extension. ' +
-            'To solve this, simply REFRESH this tab (press F5) and try again.\n\n' +
-            'Error detail: ' + err.message
+            chrome.i18n.getMessage('cannotInspectPage') + '\n\n' +
+            chrome.i18n.getMessage('errorDetail') + err.message
           );
           toggleCheckbox.checked = !toggleCheckbox.checked;
         });
@@ -103,12 +100,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function updateBadgeState(isActive) {
     if (isActive) {
-      statusBadge.textContent = 'Active';
+      statusBadge.textContent = chrome.i18n.getMessage('statusActive') || 'Active';
       statusBadge.className = 'badge badge-active';
     } else {
-      statusBadge.textContent = 'Inactive';
+      statusBadge.textContent = chrome.i18n.getMessage('statusInactive') || 'Inactive';
       statusBadge.className = 'badge badge-inactive';
     }
+  }
+
+  function localizeUI() {
+    document.querySelectorAll('[data-i18n]').forEach((el) => {
+      const key = el.getAttribute('data-i18n');
+      const message = chrome.i18n.getMessage(key);
+      if (message) {
+        el.textContent = message;
+      }
+    });
   }
 
   // Query the active tab metadata

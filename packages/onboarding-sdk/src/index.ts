@@ -12,11 +12,23 @@ export interface TourStep {
 
 export interface TourOptions {
   steps: TourStep[];
+  locale?: 'en' | 'pt-BR' | 'es' | string;
+  labels?: {
+    next?: string;
+    back?: string;
+    finish?: string;
+  };
   onStart?: () => void;
   onStepChange?: (stepIndex: number, step: TourStep) => void;
   onComplete?: () => void;
   onSkip?: () => void;
 }
+
+const DEFAULT_LABELS: Record<string, { next: string; back: string; finish: string }> = {
+  en: { next: 'Next', back: 'Back', finish: 'Finish' },
+  'pt-BR': { next: 'Avançar', back: 'Voltar', finish: 'Concluir' },
+  es: { next: 'Siguiente', back: 'Atrás', finish: 'Finalizar' }
+};
 
 export class OnboardingTour {
   private steps: TourStep[];
@@ -102,14 +114,20 @@ export class OnboardingTour {
     tooltip.style.zIndex = '999999';
     tooltip.style.maxWidth = '300px';
 
+    const locale = this.options.locale || 'en';
+    const labels = {
+      ...(DEFAULT_LABELS[locale] || DEFAULT_LABELS.en),
+      ...this.options.labels
+    };
+
     tooltip.innerHTML = `
       <div style="font-weight: bold; margin-bottom: 8px;">${step.title}</div>
       <div style="margin-bottom: 12px; font-size: 14px; color: #cbd5e1;">${this.parseRichContent(step.content)}</div>
       <div style="display: flex; justify-content: space-between; align-items: center;">
         <span style="font-size: 12px; color: #94a3b8;">${this.currentStepIndex + 1}/${this.steps.length}</span>
         <div>
-          ${this.currentStepIndex > 0 ? '<button id="btn-prev" style="margin-right: 8px;">Back</button>' : ''}
-          <button id="btn-next">${this.currentStepIndex === this.steps.length - 1 ? 'Finish' : 'Next'}</button>
+          ${this.currentStepIndex > 0 ? `<button id="btn-prev" style="margin-right: 8px;">${labels.back}</button>` : ''}
+          <button id="btn-next">${this.currentStepIndex === this.steps.length - 1 ? labels.finish : labels.next}</button>
         </div>
       </div>
     `;
@@ -164,14 +182,20 @@ export class OnboardingTour {
     modal.style.maxWidth = '400px';
     modal.style.width = '90%';
 
+    const locale = this.options.locale || 'en';
+    const labels = {
+      ...(DEFAULT_LABELS[locale] || DEFAULT_LABELS.en),
+      ...this.options.labels
+    };
+
     modal.innerHTML = `
       <div style="font-weight: bold; font-size: 18px; margin-bottom: 12px;">${step.title}</div>
       <div style="margin-bottom: 20px; font-size: 14px; color: #cbd5e1; line-height: 1.5;">${this.parseRichContent(step.content)}</div>
       <div style="display: flex; justify-content: space-between; align-items: center;">
         <span style="font-size: 12px; color: #94a3b8;">${this.currentStepIndex + 1}/${this.steps.length}</span>
         <div>
-          ${this.currentStepIndex > 0 ? '<button id="btn-prev" style="margin-right: 8px;">Back</button>' : ''}
-          <button id="btn-next">${this.currentStepIndex === this.steps.length - 1 ? 'Finish' : 'Next'}</button>
+          ${this.currentStepIndex > 0 ? `<button id="btn-prev" style="margin-right: 8px;">${labels.back}</button>` : ''}
+          <button id="btn-next">${this.currentStepIndex === this.steps.length - 1 ? labels.finish : labels.next}</button>
         </div>
       </div>
     `;

@@ -1,0 +1,146 @@
+{
+  "extName": {
+    "message": "Selecto - Element Organizer & Selector Finder",
+    "description": "The name of the extension"
+  },
+  "extDescription": {
+    "message": "Select and organize HTML elements for automated testing (CSS Selector and XPath).",
+    "description": "The description of the extension"
+  },
+  "toggleSelection": {
+    "message": "Toggle element selection mode",
+    "description": "Description of the keyboard shortcut command to toggle element selection"
+  },
+  "inspectionMode": {
+    "message": "Inspection Mode:",
+    "description": "Label for inspection mode status"
+  },
+  "statusActive": {
+    "message": "Active",
+    "description": "Status active text"
+  },
+  "statusInactive": {
+    "message": "Inactive",
+    "description": "Status inactive text"
+  },
+  "elementsInClipboard": {
+    "message": "elements in clipboard",
+    "description": "Label under elements counter"
+  },
+  "openPanelOnPage": {
+    "message": "Open Panel on Page",
+    "description": "Button to open sidebar panel"
+  },
+  "openTestSandbox": {
+    "message": "Open Test Sandbox",
+    "description": "Button to open test sandbox tab"
+  },
+  "shortcutTip": {
+    "message": "Shortcut:",
+    "description": "Shortcut tip label"
+  },
+  "cannotInspectPage": {
+    "message": "Cannot inspect this page.\n\nThis usually happens for one of the following reasons:\n1. You are on an internal Chrome page (e.g. chrome://extensions, chrome://newtab).\n2. You are on the Chrome Web Store (pages protected by browser security).\n3. This tab was already open before loading/reloading the extension. To solve this, simply REFRESH this tab (press F5) and try again.",
+    "description": "Alert message when extension fails to inject scripts"
+  },
+  "errorDetail": {
+    "message": "Error detail: ",
+    "description": "Prefix for error details in the alert message"
+  },
+  "inspectorActive": {
+    "message": "Inspector Active",
+    "description": "Text showing inspector is active in sidebar"
+  },
+  "inspectorInactive": {
+    "message": "Inspector Inactive",
+    "description": "Text showing inspector is inactive in sidebar"
+  },
+  "settingsBtnTitle": {
+    "message": "Settings",
+    "description": "Tooltip for settings gear button"
+  },
+  "closeSidebarBtnTitle": {
+    "message": "Close Panel",
+    "description": "Tooltip for closing sidebar button"
+  },
+  "enableSelection": {
+    "message": "Enable Selection:",
+    "description": "Label for toggle checkbox"
+  },
+  "selectorSettings": {
+    "message": "Selector Settings",
+    "description": "Title of settings drawer"
+  },
+  "outputFormat": {
+    "message": "Output Format:",
+    "description": "Label for selector formats selection"
+  },
+  "dimBackground": {
+    "message": "Dim Background (Fade)",
+    "description": "Label for background dimming setting"
+  },
+  "dimIntensity": {
+    "message": "Dim Intensity:",
+    "description": "Label for background dimming intensity setting"
+  },
+  "showElementLabels": {
+    "message": "Show Element Labels",
+    "description": "Label for show element labels overlay setting"
+  },
+  "saveSettings": {
+    "message": "Save Settings",
+    "description": "Button text to save settings"
+  },
+  "noElementsCaptured": {
+    "message": "No elements captured yet.",
+    "description": "Empty state title"
+  },
+  "noElementsCapturedSub": {
+    "message": "Enable the inspector and click elements on the page.",
+    "description": "Empty state description"
+  },
+  "copyAll": {
+    "message": "Copy All",
+    "description": "Button to copy all selectors"
+  },
+  "export": {
+    "message": "Export",
+    "description": "Button to export captured selectors"
+  },
+  "clearAll": {
+    "message": "Clear All",
+    "description": "Button to clear all captured selectors"
+  },
+  "clearConfirm": {
+    "message": "Are you sure you want to clear all captured elements?",
+    "description": "Confirmation prompt before clearing list"
+  },
+  "dragGripTitle": {
+    "message": "Drag to reorder",
+    "description": "Tooltip for list item drag handle"
+  },
+  "moveUpTitle": {
+    "message": "Move up",
+    "description": "Tooltip for list item move up button"
+  },
+  "moveDownTitle": {
+    "message": "Move down",
+    "description": "Tooltip for list item move down button"
+  },
+  "renamePlaceholder": {
+    "message": "Rename element...",
+    "description": "Placeholder for renaming input field"
+  },
+  "copySelectorTitle": {
+    "message": "Copy Selector",
+    "description": "Tooltip for copying single selector"
+  },
+  "removeTitle": {
+    "message": "Remove",
+    "description": "Tooltip for removing single list item"
+  },
+  "copied": {
+    "message": "Copied!",
+    "description": "Temporary success text after copy"
+  }
+}
