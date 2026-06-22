@@ -47,6 +47,93 @@ interface Stats {
   totalEvents: number;
 }
 
+function parseInlineMarkdown(text: string): string {
+  let html = text;
+
+  // 1. Bold: **text** or __text__
+  html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/__(.*?)__/g, '<strong>$1</strong>');
+
+  // 2. Italic: *text* or _text_
+  html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+  html = html.replace(/_(.*?)_/g, '<em>$1</em>');
+
+  // 3. Inline Code: `code`
+  html = html.replace(/`(.*?)`/g, '<code style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 0.9em; color: #f43f5e;">$1</code>');
+
+  // 4. Markdown link [text](url)
+  html = html.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" style="color:#38bdf8;text-decoration:underline;font-weight:600;">$1</a>');
+
+  return html;
+}
+
+function parseRichContent(content: string): string {
+  if (!content) return "";
+  
+  const lines = content.split('\n');
+  const parsedLines = lines.map(line => {
+    const trimmed = line.trim();
+    
+    // 1. YouTube link recognition
+    const youtubeReg = /^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:[^\s]*)$/i;
+    const ytMatch = trimmed.match(youtubeReg);
+    if (ytMatch) {
+      const videoId = ytMatch[1];
+      return `<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;margin:8px 0;border-radius:6px;background:#000;">
+        <iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="position:absolute;top:0;left:0;width:100%;height:100%;border-radius:6px;"></iframe>
+      </div>`;
+    }
+
+    // 2. Image link recognition
+    const mdImageReg = /!\[(.*?)\]\((.*?)\)/i;
+    const mdImgMatch = trimmed.match(mdImageReg);
+    if (mdImgMatch) {
+      const src = mdImgMatch[2];
+      const alt = mdImgMatch[1] || "Image";
+      return `<img src="${src}" alt="${alt}" style="max-width:100%;height:auto;border-radius:6px;margin:8px 0;display:block;" />`;
+    }
+
+    const rawImageReg = /^(https?:\/\/[^\s]+?\.(?:png|jpg|jpeg|gif|svg|webp|bmp))$/i;
+    const rawImgMatch = trimmed.match(rawImageReg);
+    if (rawImgMatch) {
+      const src = rawImgMatch[1];
+      return `<img src="${src}" alt="Embedded Image" style="max-width:100%;height:auto;border-radius:6px;margin:8px 0;display:block;" />`;
+    }
+
+    // 3. Bullet points (starting with "- " or "* ")
+    const bulletMatch = trimmed.match(/^[\-*]\s+(.*)$/);
+    if (bulletMatch) {
+      const itemContent = bulletMatch[1];
+      const inlineParsed = parseInlineMarkdown(itemContent);
+      return `<div style="display: flex; gap: 8px; margin: 4px 0; align-items: flex-start;">
+        <span style="color: #818cf8; font-weight: bold; line-height: 1.25;">•</span>
+        <span style="flex: 1;">${inlineParsed}</span>
+      </div>`;
+    }
+
+    // 4. Numbered lists (starting with "1. ")
+    const numberMatch = trimmed.match(/^(\d+)\.\s+(.*)$/);
+    if (numberMatch) {
+      const num = numberMatch[1];
+      const itemContent = numberMatch[2];
+      const inlineParsed = parseInlineMarkdown(itemContent);
+      return `<div style="display: flex; gap: 8px; margin: 4px 0; align-items: flex-start;">
+        <span style="color: #818cf8; font-weight: bold; font-size: 0.9em; line-height: 1.25;">${num}.</span>
+        <span style="flex: 1;">${inlineParsed}</span>
+      </div>`;
+    }
+
+    // Paragraph spacer
+    if (trimmed === "") {
+      return `<div style="height: 8px;"></div>`;
+    }
+
+    return parseInlineMarkdown(line);
+  });
+
+  return parsedLines.join('\n');
+}
+
 interface DashboardClientProps {
   initialFlows: Flow[];
   initialStats: Stats;
@@ -59,7 +146,7 @@ export default function DashboardClient({ initialFlows, initialStats }: Dashboar
   const [editingFlow, setEditingFlow] = useState<Partial<Flow> | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [isRawImportOpen, setIsRawImportOpen] = useState(false);
+  const [editorMode, setEditorMode] = useState<"visual" | "raw">("visual");
   const [rawImportText, setRawImportText] = useState("");
 
   // 1. Toggle Flow Active State
@@ -114,6 +201,7 @@ export default function DashboardClient({ initialFlows, initialStats }: Dashboar
   // 3. Open Create Flow Modal
   const openCreateModal = () => {
     setIsEditMode(false);
+    setEditorMode("visual");
     setEditingFlow({
       name: "",
       description: "",
@@ -126,6 +214,7 @@ export default function DashboardClient({ initialFlows, initialStats }: Dashboar
   // 4. Open Edit Flow Modal
   const openEditModal = (flow: Flow) => {
     setIsEditMode(true);
+    setEditorMode("visual");
     // Deep clone to avoid direct state mutation
     setEditingFlow(JSON.parse(JSON.stringify(flow)));
     setIsModalOpen(true);
@@ -140,8 +229,13 @@ export default function DashboardClient({ initialFlows, initialStats }: Dashboar
 
     setIsSaving(true);
     
+    let stepsToSave = editingFlow.steps || [];
+    if (editorMode === "raw") {
+      stepsToSave = deserializeSteps(rawImportText, editingFlow.steps || []);
+    }
+
     // Set index on steps sequentially
-    const formattedSteps = (editingFlow.steps || []).map((step, idx) => ({
+    const formattedSteps = stepsToSave.map((step, idx) => ({
       ...step,
       stepIndex: idx
     }));
@@ -221,70 +315,119 @@ export default function DashboardClient({ initialFlows, initialStats }: Dashboar
     });
   };
 
-  const handleRawImport = () => {
-    if (!rawImportText.trim()) return;
+  const serializeSteps = (steps: Step[]): string => {
+    return (steps || [])
+      .map(step => {
+        const title = step.title || "Step";
+        const content = (step.content || "").replace(/\n/g, " ");
+        const placement = step.placement || "bottom";
+        const selector = step.targetSelector || "";
+        
+        const lines = [
+          `/* Step: ${title} */`,
+          content ? `/* Content: ${content} */` : null,
+          `/* Placement: ${placement} */`,
+          selector
+        ].filter(Boolean);
+        
+        return lines.join("\n").trim();
+      })
+      .join("\n\n");
+  };
 
-    let parsedSteps: Step[] = [];
+  const deserializeSteps = (text: string, existingSteps: Step[]): Step[] => {
+    if (!text.trim()) return [];
 
-    try {
-      const json = JSON.parse(rawImportText);
-      if (Array.isArray(json)) {
-        parsedSteps = json.map((item: any, idx: number) => ({
-          title: item.name || item.tag || `Step ${idx + 1}`,
-          content: item.text ? `Action on: ${item.text}` : "Describe the action for this step...",
-          targetSelector: item.css || item.activeLocator || "",
-          placement: "bottom",
-          stepIndex: idx
-        }));
-      } else {
-        alert("Invalid JSON format. Expected an array of elements.");
-        return;
+    // Check if it starts with JSON array
+    if (text.trim().startsWith("[")) {
+      try {
+        const json = JSON.parse(text);
+        if (Array.isArray(json)) {
+          return json.map((item: any, idx: number) => {
+            const existing = existingSteps[idx];
+            return {
+              id: existing?.id || crypto.randomUUID(),
+              title: item.name || item.tag || existing?.title || `Step ${idx + 1}`,
+              content: item.text ? `Action on: ${item.text}` : (existing?.content || "Describe the action for this step..."),
+              targetSelector: item.css || item.activeLocator || "",
+              placement: existing?.placement || "bottom",
+              stepIndex: idx
+            };
+          });
+        }
+      } catch (e) {
+        // Fall back to plain text parser
       }
-    } catch (e) {
-      // Plain text parser
-      const lines = rawImportText.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
-      let currentTitle = "";
+    }
+
+    const blocks = text.split(/\n\s*\n/).map(b => b.trim()).filter(Boolean);
+    return blocks.map((block, idx) => {
+      const lines = block.split(/\n/).map(l => l.trim()).filter(Boolean);
       
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
+      let title = "";
+      let content = "";
+      let placement = "";
+      const selectorLines: string[] = [];
+      
+      lines.forEach(line => {
         const cssCommentMatch = line.match(/^\/\*\s*(.*?)\s*\*\/$/);
         const slashCommentMatch = line.match(/^\/\/\s*(.*)$/);
+        const commentContent = cssCommentMatch ? cssCommentMatch[1].trim() : (slashCommentMatch ? slashCommentMatch[1].trim() : null);
         
-        if (cssCommentMatch) {
-          currentTitle = cssCommentMatch[1];
-        } else if (slashCommentMatch) {
-          currentTitle = slashCommentMatch[1];
+        if (commentContent !== null) {
+          const stepMatch = commentContent.match(/^Step:\s*(.*)$/i);
+          const titleMatch = commentContent.match(/^Title:\s*(.*)$/i);
+          const contentMatch = commentContent.match(/^Content:\s*(.*)$/i);
+          const descMatch = commentContent.match(/^Description:\s*(.*)$/i);
+          const placementMatch = commentContent.match(/^Placement:\s*(.*)$/i);
+          
+          if (stepMatch) {
+            title = stepMatch[1].trim();
+          } else if (titleMatch) {
+            title = titleMatch[1].trim();
+          } else if (contentMatch) {
+            content = contentMatch[1].trim();
+          } else if (descMatch) {
+            content = descMatch[1].trim();
+          } else if (placementMatch) {
+            placement = placementMatch[1].trim().toLowerCase();
+          } else if (["top", "bottom", "left", "right", "center"].includes(commentContent.toLowerCase())) {
+            placement = commentContent.toLowerCase();
+          } else {
+            if (!title) {
+              title = commentContent;
+            } else if (!content) {
+              content = commentContent;
+            }
+          }
         } else {
-          parsedSteps.push({
-            title: currentTitle || `Step ${parsedSteps.length + 1}`,
-            content: "Describe the action for this step...",
-            targetSelector: line,
-            placement: "bottom",
-            stepIndex: parsedSteps.length
-          });
-          currentTitle = "";
+          selectorLines.push(line);
         }
-      }
-    }
-
-    if (parsedSteps.length === 0) {
-      alert("No valid selectors found in the input.");
-      return;
-    }
-
-    if (confirm(`Found ${parsedSteps.length} step(s). Do you want to overwrite current steps or append them?`)) {
-      setEditingFlow(prev => prev ? { ...prev, steps: parsedSteps } : null);
-    } else {
-      setEditingFlow(prev => {
-        if (!prev) return null;
-        const currentSteps = prev.steps || [];
-        const appended = [...currentSteps, ...parsedSteps].map((s, idx) => ({ ...s, stepIndex: idx }));
-        return { ...prev, steps: appended };
       });
-    }
+      
+      const targetSelector = selectorLines.join("\n").trim();
+      const existing = existingSteps[idx];
+      
+      return {
+        id: existing?.id || crypto.randomUUID(),
+        title: title || existing?.title || `Step ${idx + 1}`,
+        content: content || existing?.content || "Describe the action for this step...",
+        targetSelector: targetSelector,
+        placement: placement || existing?.placement || "bottom",
+        stepIndex: idx
+      };
+    });
+  };
 
-    setRawImportText("");
-    setIsRawImportOpen(false);
+  const handleToggleEditorMode = (newMode: "visual" | "raw") => {
+    if (newMode === "raw") {
+      const text = serializeSteps(editingFlow?.steps || []);
+      setRawImportText(text);
+    } else {
+      const parsed = deserializeSteps(rawImportText, editingFlow?.steps || []);
+      setEditingFlow(prev => prev ? { ...prev, steps: parsed } : null);
+    }
+    setEditorMode(newMode);
   };
 
   return (
@@ -521,64 +664,65 @@ export default function DashboardClient({ initialFlows, initialStats }: Dashboar
                 </div>
               </div>
 
-              {/* Steps Builder Section */}
-              <div className="space-y-4">
-                <div className="flex justify-between items-center border-b border-border/80 pb-2">
-                  <h4 className="font-extrabold text-lg flex items-center gap-2">
-                    <Settings className="w-5 h-5 text-indigo-400" />
-                    Steps Layout
-                  </h4>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setIsRawImportOpen(!isRawImportOpen)}
-                      className="flex items-center gap-1.5 px-4 py-2 bg-secondary hover:bg-secondary/70 border border-border text-slate-100 hover:text-white rounded-xl text-xs font-bold transition cursor-pointer"
-                    >
-                      Raw Import
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleAddStep}
-                      className="flex items-center gap-1.5 px-4 py-2 bg-primary hover:bg-primary-foreground/90 text-primary-foreground rounded-xl text-xs font-bold transition cursor-pointer"
-                    >
-                      <Plus className="w-4 h-4" />
-                      Add Step
-                    </button>
-                  </div>
-                </div>
+                 <div className="flex justify-between items-center border-b border-border/80 pb-2">
+                   <h4 className="font-extrabold text-lg flex items-center gap-2">
+                     <Settings className="w-5 h-5 text-indigo-400" />
+                     Steps Layout
+                   </h4>
+                   
+                   {/* 🎛️ Editor Mode Tabs */}
+                   <div className="flex items-center gap-4 bg-secondary/40 p-1.5 rounded-2xl border border-border">
+                     <button
+                       type="button"
+                       onClick={() => handleToggleEditorMode("visual")}
+                       className={`px-4 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                         editorMode === "visual"
+                           ? "bg-primary text-primary-foreground shadow-sm"
+                           : "text-muted-foreground hover:text-foreground"
+                       }`}
+                     >
+                       Visual Cards
+                     </button>
+                     <button
+                       type="button"
+                       onClick={() => handleToggleEditorMode("raw")}
+                       className={`px-4 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                         editorMode === "raw"
+                           ? "bg-primary text-primary-foreground shadow-sm"
+                           : "text-muted-foreground hover:text-foreground"
+                       }`}
+                     >
+                       Raw Text (Comments)
+                     </button>
+                   </div>
 
-                {isRawImportOpen && (
-                  <div className="space-y-3 border border-border p-5 rounded-2xl bg-secondary/10">
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs font-bold text-slate-300">Raw Import (JSON or Copy-Paste selectors)</span>
-                      <button 
-                        type="button" 
-                        onClick={() => setIsRawImportOpen(false)}
-                        className="text-xs text-muted-foreground hover:text-foreground cursor-pointer"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                    <textarea 
-                      placeholder="Paste JSON exported from Selecto extension, OR paste plain selectors:&#10;&#10;/* Step Title 1 */&#10;html > body > button&#10;&#10;// Step Title 2&#10;#submit-btn"
-                      rows={6}
-                      value={rawImportText}
-                      onChange={e => setRawImportText(e.target.value)}
-                      className="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl focus:ring-1 focus:ring-primary outline-none transition text-xs font-mono text-indigo-300"
-                    />
-                    <div className="flex justify-end">
-                      <button 
-                        type="button"
-                        onClick={handleRawImport}
-                        className="px-4 py-2 bg-primary hover:bg-primary-foreground/90 text-primary-foreground text-xs font-bold rounded-xl transition cursor-pointer"
-                      >
-                        Import Steps
-                      </button>
-                    </div>
-                  </div>
-                )}
+                   {editorMode === "visual" && (
+                     <button
+                       type="button"
+                       onClick={handleAddStep}
+                       className="flex items-center gap-1.5 px-4 py-2 bg-primary hover:bg-primary-foreground/90 text-primary-foreground rounded-xl text-xs font-bold transition cursor-pointer"
+                     >
+                       <Plus className="w-4 h-4" />
+                       Add Step
+                     </button>
+                   )}
+                 </div>
 
-                {(editingFlow.steps || []).length === 0 ? (
+                 {editorMode === "raw" ? (
+                   <div className="space-y-3 border border-border p-5 rounded-3xl bg-card/40">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-xs font-bold text-slate-300">Raw Steps Editor</span>
+                        <span className="text-[10px] text-muted-foreground italic">Use comments to edit Title, Content, and Placement. One blank line separates steps. Paste Extension JSON to import.</span>
+                      </div>
+                      <textarea 
+                        placeholder="/* Step: Welcome Step */&#10;/* Content: Welcome to Selecto! */&#10;/* Placement: center */&#10;&#10;/* Step: Click Button */&#10;/* Content: Click the submit button to save. */&#10;/* Placement: bottom */&#10;#btn-submit"
+                        rows={12}
+                        value={rawImportText}
+                        onChange={e => setRawImportText(e.target.value)}
+                        className="w-full px-4 py-3 bg-background border border-border rounded-2xl focus:ring-1 focus:ring-primary outline-none transition text-xs font-mono text-indigo-300"
+                      />
+                    </div>
+                  ) : (editingFlow.steps || []).length === 0 ? (
                   <div className="border border-dashed border-border py-12 rounded-2xl text-center text-muted-foreground text-sm bg-card/10">
                     No steps added to this tour. Click "Add Step" above to configure your onboarding guidelines.
                   </div>
@@ -639,7 +783,29 @@ export default function DashboardClient({ initialFlows, initialStats }: Dashboar
                               />
                             </div>
                             <div className="space-y-1.5">
-                              <label className="text-xs font-bold text-muted-foreground">Step Content / Description</label>
+                              <label className="text-xs font-bold text-muted-foreground flex items-center gap-1.5">
+                                Step Content / Description
+                                <span className="relative group/info inline-block">
+                                  <HelpCircle className="w-3.5 h-3.5 text-muted-foreground/60 hover:text-indigo-400 transition cursor-help" />
+                                  <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 p-3.5 bg-slate-950 border border-border rounded-xl shadow-xl opacity-0 group-hover/info:opacity-100 pointer-events-none transition-opacity duration-200 z-50 text-[10px] text-slate-300 space-y-1 font-normal normal-case leading-relaxed">
+                                    <span className="font-bold text-slate-100 border-b border-border/60 pb-1 mb-1.5 flex items-center justify-between">
+                                      <span>Supported Formatting</span>
+                                      <span className="text-[9px] text-indigo-400 font-mono font-bold">Markdown</span>
+                                    </span>
+                                    <span className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+                                      <span><strong>**Bold**</strong> / <strong>__Bold__</strong></span>
+                                      <span><em>*Italic*</em> / <em>_Italic_</em></span>
+                                      <span><code className="bg-white/10 px-1.5 py-0.5 rounded text-[9px] font-mono text-rose-400">`code`</code> Inline Code</span>
+                                      <span><span className="text-indigo-300 underline">[Text](url)</span> Link</span>
+                                      <span><span className="text-indigo-300 font-mono">- item</span> Bullet List</span>
+                                      <span><span className="text-indigo-300 font-mono">1. item</span> Number List</span>
+                                    </span>
+                                    <span className="border-t border-border/40 pt-1.5 mt-1.5 text-[9px] text-muted-foreground leading-normal block">
+                                      Paste a YouTube link or image URL on its own line to auto-embed video players and images.
+                                    </span>
+                                  </span>
+                                </span>
+                              </label>
                               <textarea
                                 value={step.content}
                                 onChange={e => handleStepChange(idx, "content", e.target.value)}
@@ -647,6 +813,15 @@ export default function DashboardClient({ initialFlows, initialStats }: Dashboar
                                 rows={3}
                                 className="w-full px-3.5 py-2 bg-background border border-border rounded-xl focus:ring-1 focus:ring-primary outline-none transition text-xs"
                               />
+                              {step.content && (
+                                <div className="mt-2 p-3 bg-secondary/20 border border-border/40 rounded-xl text-xs space-y-1">
+                                  <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Live Preview</div>
+                                  <div 
+                                    className="text-slate-300 selecto-preview-content prose prose-invert max-w-none"
+                                    dangerouslySetInnerHTML={{ __html: parseRichContent(step.content) }}
+                                  />
+                                </div>
+                              )}
                             </div>
                           </div>
 
@@ -682,11 +857,10 @@ export default function DashboardClient({ initialFlows, initialStats }: Dashboar
                           </div>
                         </div>
                       </div>
-                    ))}
+                    ))}`
                   </div>
                 )}
               </div>
-            </div>
 
             {/* Modal Footer */}
             <div className="p-6 border-t border-border flex items-center justify-end gap-3 bg-card/50">

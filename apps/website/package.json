@@ -1,30 +1,26 @@
 {
-  "name": "dashboard",
+  "name": "website",
   "version": "1.0.3",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --port 3001",
     "build": "next build",
-    "start": "next start",
+    "start": "next start --port 3001",
     "lint": "eslint"
   },
   "dependencies": {
-    "@libsql/client": "^0.17.4",
-    "@selecto/core": "*",
-    "@selecto/ui": "*",
-    "drizzle-orm": "^0.45.2",
     "lucide-react": "^1.21.0",
     "next": "16.2.9",
-    "postgres": "^3.4.9",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "@selecto/ui": "*",
+    "@selecto/core": "*"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "drizzle-kit": "^0.30.4",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
     "tailwindcss": "^4",

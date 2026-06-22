@@ -104,7 +104,7 @@ export class OnboardingTour {
 
     tooltip.innerHTML = `
       <div style="font-weight: bold; margin-bottom: 8px;">${step.title}</div>
-      <div style="margin-bottom: 12px; font-size: 14px; color: #cbd5e1;">${step.content}</div>
+      <div style="margin-bottom: 12px; font-size: 14px; color: #cbd5e1;">${this.parseRichContent(step.content)}</div>
       <div style="display: flex; justify-content: space-between; align-items: center;">
         <span style="font-size: 12px; color: #94a3b8;">${this.currentStepIndex + 1}/${this.steps.length}</span>
         <div>
@@ -166,7 +166,7 @@ export class OnboardingTour {
 
     modal.innerHTML = `
       <div style="font-weight: bold; font-size: 18px; margin-bottom: 12px;">${step.title}</div>
-      <div style="margin-bottom: 20px; font-size: 14px; color: #cbd5e1; line-height: 1.5;">${step.content}</div>
+      <div style="margin-bottom: 20px; font-size: 14px; color: #cbd5e1; line-height: 1.5;">${this.parseRichContent(step.content)}</div>
       <div style="display: flex; justify-content: space-between; align-items: center;">
         <span style="font-size: 12px; color: #94a3b8;">${this.currentStepIndex + 1}/${this.steps.length}</span>
         <div>
@@ -193,6 +193,93 @@ export class OnboardingTour {
       });
     }
     this.overlayInspector.highlightElement(target);
+  }
+
+  private parseInlineMarkdown(text: string): string {
+    let html = text;
+
+    // 1. Bold: **text** or __text__
+    html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/__(.*?)__/g, '<strong>$1</strong>');
+
+    // 2. Italic: *text* or _text_
+    html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    html = html.replace(/_(.*?)_/g, '<em>$1</em>');
+
+    // 3. Inline Code: `code`
+    html = html.replace(/`(.*?)`/g, '<code style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 0.9em; color: #f43f5e;">$1</code>');
+
+    // 4. Markdown link [text](url)
+    html = html.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" style="color:#38bdf8;text-decoration:underline;font-weight:600;">$1</a>');
+
+    return html;
+  }
+
+  private parseRichContent(content: string): string {
+    if (!content) return "";
+    
+    const lines = content.split('\n');
+    const parsedLines = lines.map(line => {
+      const trimmed = line.trim();
+      
+      // 1. YouTube link recognition
+      const youtubeReg = /^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:[^\s]*)$/i;
+      const ytMatch = trimmed.match(youtubeReg);
+      if (ytMatch) {
+        const videoId = ytMatch[1];
+        return `<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;margin:8px 0;border-radius:6px;background:#000;">
+          <iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="position:absolute;top:0;left:0;width:100%;height:100%;border-radius:6px;"></iframe>
+        </div>`;
+      }
+
+      // 2. Image link recognition
+      const mdImageReg = /!\[(.*?)\]\((.*?)\)/i;
+      const mdImgMatch = trimmed.match(mdImageReg);
+      if (mdImgMatch) {
+        const src = mdImgMatch[2];
+        const alt = mdImgMatch[1] || "Image";
+        return `<img src="${src}" alt="${alt}" style="max-width:100%;height:auto;border-radius:6px;margin:8px 0;display:block;" />`;
+      }
+
+      const rawImageReg = /^(https?:\/\/[^\s]+?\.(?:png|jpg|jpeg|gif|svg|webp|bmp))$/i;
+      const rawImgMatch = trimmed.match(rawImageReg);
+      if (rawImgMatch) {
+        const src = rawImgMatch[1];
+        return `<img src="${src}" alt="Embedded Image" style="max-width:100%;height:auto;border-radius:6px;margin:8px 0;display:block;" />`;
+      }
+
+      // 3. Bullet points (starting with "- " or "* ")
+      const bulletMatch = trimmed.match(/^[\-*]\s+(.*)$/);
+      if (bulletMatch) {
+        const itemContent = bulletMatch[1];
+        const inlineParsed = this.parseInlineMarkdown(itemContent);
+        return `<div style="display: flex; gap: 8px; margin: 4px 0; align-items: flex-start;">
+          <span style="color: #818cf8; font-weight: bold; line-height: 1.25;">•</span>
+          <span style="flex: 1;">${inlineParsed}</span>
+        </div>`;
+      }
+
+      // 4. Numbered lists (starting with "1. ")
+      const numberMatch = trimmed.match(/^(\d+)\.\s+(.*)$/);
+      if (numberMatch) {
+        const num = numberMatch[1];
+        const itemContent = numberMatch[2];
+        const inlineParsed = this.parseInlineMarkdown(itemContent);
+        return `<div style="display: flex; gap: 8px; margin: 4px 0; align-items: flex-start;">
+          <span style="color: #818cf8; font-weight: bold; font-size: 0.9em; line-height: 1.25;">${num}.</span>
+          <span style="flex: 1;">${inlineParsed}</span>
+        </div>`;
+      }
+
+      // Paragraph spacer
+      if (trimmed === "") {
+        return `<div style="height: 8px;"></div>`;
+      }
+
+      return this.parseInlineMarkdown(line);
+    });
+
+    return parsedLines.join('\n');
   }
 
   private cleanupUI(): void {

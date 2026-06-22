@@ -10,10 +10,17 @@
   "scripts": {
     "postinstall": "npm run copy-sdk --workspace=apps/chrome-extension",
     "dev:dashboard": "npm run dev --workspace=apps/dashboard",
+    "dev:website": "npm run dev --workspace=apps/website",
+    "dev:sdk": "npm run dev --workspace=packages/onboarding-sdk",
+    "build:website": "npm run build --workspace=apps/website",
     "build:sdk": "npm run build --workspace=packages/onboarding-sdk",
+    "dev": "concurrently -n \"dashboard,website,sdk\" -c \"blue,cyan,magenta\" \"npm run dev:dashboard\" \"npm run dev:website\" \"npm run dev:sdk\"",
     "bump-version": "node scripts/bump-version.mjs",
     "publish:selector": "npm publish -w selecto-sdk --access public",
     "publish:onboarding": "npm run build:sdk && npm publish -w selecto-onboarding-sdk --access public"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
   },
   "author": "Selecto Authors",
   "license": "MIT"
