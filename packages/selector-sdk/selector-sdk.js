@@ -25,23 +25,48 @@
       while (current && current.nodeType === Node.ELEMENT_NODE) {
         let selector = current.nodeName.toLowerCase();
 
-        // 1. Check for unique ID
-        if (current.id) {
-          // Escape special characters in ID
+        // 1. Check for stable semantic attributes
+        const semanticAttributes = ['data-onboarding-id', 'data-testid', 'data-qa', 'data-test'];
+        let semanticSelector = null;
+        let foundUniqueSemantic = false;
+        
+        for (const attr of semanticAttributes) {
+          const val = current.getAttribute(attr);
+          if (val) {
+            const escapedVal = val.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+            const selectorAttr = `[${attr}="${escapedVal}"]`;
+            try {
+              if (document.querySelectorAll(selectorAttr).length === 1) {
+                selector = selectorAttr;
+                path.unshift(selector);
+                foundUniqueSemantic = true;
+                break;
+              } else if (!semanticSelector) {
+                semanticSelector = selectorAttr;
+              }
+            } catch (e) {}
+          }
+        }
+
+        if (foundUniqueSemantic) {
+          break; // Unique semantic selector found, stop traversing
+        }
+
+        if (semanticSelector) {
+          selector = current.nodeName.toLowerCase() + semanticSelector;
+        } else if (current.id) {
+          // 2. Check for unique ID
           const escapedId = current.id.replace(/(:|\.|\[|\]|,|=|@)/g, '\\$1');
           try {
-            // Check if the ID is unique in the DOM
             if (document.querySelectorAll('#' + escapedId).length === 1) {
               selector = '#' + escapedId;
               path.unshift(selector);
               break; // Unique ID found, stop traversing
             }
-          } catch (e) {
-            // Fallback if ID is invalid or selector fails
-          }
+          } catch (e) {}
         }
 
-        // 2. Fallback to tag name and nth-of-type for robustness
+        // 3. Fallback to tag name and nth-of-type for robustness
         const parent = current.parentElement;
         if (parent) {
           const siblings = Array.from(parent.children);
@@ -134,6 +159,16 @@
     static getPlaywrightLocator(el) {
       if (!(el instanceof Element)) return '';
 
+      // 0. Check for stable test/onboarding attributes
+      const testId = el.getAttribute('data-testid');
+      if (testId) {
+        return `page.getByTestId('${testId}')`;
+      }
+      const onboardingId = el.getAttribute('data-onboarding-id');
+      if (onboardingId) {
+        return `page.locator('[data-onboarding-id="${onboardingId}"]')`;
+      }
+
       // 1. Try to find placeholder/role text
       const role = el.getAttribute('role');
       const placeholder = el.getAttribute('placeholder');
@@ -168,6 +203,16 @@
     static getCypressLocator(el) {
       if (!(el instanceof Element)) return '';
       
+      // 0. Check for stable test/onboarding attributes
+      const testId = el.getAttribute('data-testid');
+      if (testId) {
+        return `cy.get('[data-testid="${testId}"]')`;
+      }
+      const onboardingId = el.getAttribute('data-onboarding-id');
+      if (onboardingId) {
+        return `cy.get('[data-onboarding-id="${onboardingId}"]')`;
+      }
+
       if (el.id) {
         return `cy.get('#${el.id}')`;
       }

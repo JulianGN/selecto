@@ -38,16 +38,139 @@ export class OnboardingTour {
   private tooltipElement: HTMLElement | null = null;
   private overlayInspector: any = null; // ElementInspector instance for spotlight
 
+  public static discoverFromDOM(options?: Omit<TourOptions, 'steps'>): OnboardingTour {
+    const steps: TourStep[] = [];
+    
+    // Find all elements with tour step attributes
+    const elements = Array.from(document.querySelectorAll('[data-tour-step], [data-onboarding-step]'));
+    
+    elements.forEach((el) => {
+      const stepAttr = el.getAttribute('data-tour-step') || el.getAttribute('data-onboarding-step');
+      if (!stepAttr) return;
+      
+      const stepIndex = parseInt(stepAttr, 10);
+      if (isNaN(stepIndex)) return;
+      
+      const title = el.getAttribute('data-tour-title') || 
+                    el.getAttribute('data-onboarding-title') || 
+                    `Step ${stepIndex}`;
+                    
+      const content = el.getAttribute('data-tour-content') || 
+                      el.getAttribute('data-onboarding-content') || 
+                      '';
+                      
+      const placementVal = el.getAttribute('data-tour-placement') || 
+                           el.getAttribute('data-onboarding-placement') || 
+                           'bottom';
+                           
+      const placement = ['top', 'bottom', 'left', 'right', 'center'].includes(placementVal)
+        ? (placementVal as any)
+        : 'bottom';
+
+      // Use the attribute selector itself as a guaranteed unique path for the step
+      const targetSelector = el.hasAttribute('data-tour-step')
+        ? `[data-tour-step="${stepAttr}"]`
+        : `[data-onboarding-step="${stepAttr}"]`;
+
+      steps.push({
+        id: `discovered-step-${stepIndex}-${Math.random().toString(36).substring(2, 6)}`,
+        title,
+        content,
+        targetSelector,
+        placement
+      });
+    });
+
+    // Sort steps numerically
+    steps.sort((a, b) => {
+      const aNum = parseInt(a.targetSelector?.match(/\d+/)?.[0] || '0', 10);
+      const bNum = parseInt(b.targetSelector?.match(/\d+/)?.[0] || '0', 10);
+      return aNum - bNum;
+    });
+
+    return new OnboardingTour({
+      ...options || {},
+      steps
+    });
+  }
+
+  private static activeTourInstance: OnboardingTour | null = null;
+
   constructor(options: TourOptions) {
     this.options = options;
     this.steps = options.steps;
   }
 
+  private handleResizeOrScroll = (): void => {
+    if (!this.active || !this.tooltipElement) return;
+    const step = this.steps[this.currentStepIndex];
+    if (step.targetSelector) {
+      const target = document.querySelector(step.targetSelector);
+      if (target) {
+        this.positionTooltip(target as HTMLElement, this.tooltipElement, step.placement);
+        if (this.overlayInspector) {
+          this.overlayInspector.highlightElement(target as HTMLElement);
+        }
+      }
+    }
+  };
+
+  private positionTooltip(target: HTMLElement, tooltip: HTMLElement, placement?: string): void {
+    const rect = target.getBoundingClientRect();
+    const tooltipRect = tooltip.getBoundingClientRect();
+
+    let left = rect.left + (rect.width - tooltipRect.width) / 2;
+    let top = rect.bottom + 8;
+
+    if (placement === 'top') {
+      left = rect.left + (rect.width - tooltipRect.width) / 2;
+      top = rect.top - tooltipRect.height - 8;
+    } else if (placement === 'left') {
+      left = rect.left - tooltipRect.width - 8;
+      top = rect.top + (rect.height - tooltipRect.height) / 2;
+    } else if (placement === 'right') {
+      left = rect.right + 8;
+      top = rect.top + (rect.height - tooltipRect.height) / 2;
+    }
+
+    // Viewport bounds checking (excluding scrollbars)
+    const viewportPadding = 16;
+    const viewportWidth = document.documentElement.clientWidth;
+    const viewportHeight = document.documentElement.clientHeight;
+
+    const maxLeft = viewportWidth - tooltipRect.width - viewportPadding;
+    const minLeft = viewportPadding;
+
+    if (left < minLeft) left = minLeft;
+    if (left > maxLeft) left = maxLeft;
+
+    const maxTop = viewportHeight - tooltipRect.height - viewportPadding;
+    const minTop = viewportPadding;
+
+    if (top < minTop) top = minTop;
+    if (top > maxTop) top = maxTop;
+
+    tooltip.style.left = `${left}px`;
+    tooltip.style.top = `${top}px`;
+  }
+
   public start(): void {
     if (this.active || this.steps.length === 0) return;
+
+    // Terminate any currently running tour
+    if (OnboardingTour.activeTourInstance) {
+      OnboardingTour.activeTourInstance.cleanup();
+    }
+    OnboardingTour.activeTourInstance = this;
+
     this.active = true;
     this.currentStepIndex = 0;
     this.options.onStart?.();
+
+    // Listen for resize and scroll events to dynamically position the tooltip
+    window.addEventListener('resize', this.handleResizeOrScroll);
+    window.addEventListener('scroll', this.handleResizeOrScroll, { capture: true });
+
     this.renderStep();
   }
 
@@ -101,18 +224,26 @@ export class OnboardingTour {
   }
 
   private renderTooltip(target: HTMLElement, step: TourStep): void {
-    // Basic tooltip UI creation in Shadow DOM or direct injection
-    // (For skeleton, just inject basic element)
     const tooltip = document.createElement('div');
     tooltip.id = 'selecto-onboarding-tooltip';
-    tooltip.style.position = 'absolute';
-    tooltip.style.backgroundColor = '#1e293b';
-    tooltip.style.color = '#ffffff';
-    tooltip.style.padding = '16px';
-    tooltip.style.borderRadius = '8px';
-    tooltip.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.3)';
-    tooltip.style.zIndex = '999999';
-    tooltip.style.maxWidth = '300px';
+    
+    // Apply premium styling
+    Object.assign(tooltip.style, {
+      position: 'fixed',
+      backgroundColor: 'rgba(15, 23, 42, 0.95)',
+      backdropFilter: 'blur(8px)',
+      webkitBackdropFilter: 'blur(8px)',
+      border: '1px solid rgba(255, 255, 255, 0.1)',
+      color: '#ffffff',
+      padding: '16px',
+      borderRadius: '12px',
+      boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4)',
+      zIndex: '2147483647', // Above the highlight overlay (2147483646)
+      maxWidth: '320px',
+      width: '280px',
+      boxSizing: 'border-box',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+    });
 
     const locale = this.options.locale || 'en';
     const labels = {
@@ -121,13 +252,22 @@ export class OnboardingTour {
     };
 
     tooltip.innerHTML = `
-      <div style="font-weight: bold; margin-bottom: 8px;">${step.title}</div>
-      <div style="margin-bottom: 12px; font-size: 14px; color: #cbd5e1;">${this.parseRichContent(step.content)}</div>
+      <div style="font-weight: bold; margin-bottom: 8px; font-size: 15px; color: #f8fafc; display: flex; justify-content: space-between; align-items: center;">
+        <span>${step.title}</span>
+        <button id="btn-skip" style="background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 16px; padding: 4px; line-height: 1; transition: color 0.2s;">✕</button>
+      </div>
+      <div style="margin-bottom: 16px; font-size: 13.5px; color: #cbd5e1; line-height: 1.4;">${this.parseRichContent(step.content)}</div>
       <div style="display: flex; justify-content: space-between; align-items: center;">
-        <span style="font-size: 12px; color: #94a3b8;">${this.currentStepIndex + 1}/${this.steps.length}</span>
-        <div>
-          ${this.currentStepIndex > 0 ? `<button id="btn-prev" style="margin-right: 8px;">${labels.back}</button>` : ''}
-          <button id="btn-next">${this.currentStepIndex === this.steps.length - 1 ? labels.finish : labels.next}</button>
+        <span style="font-size: 12px; color: #94a3b8; font-weight: 500;">${this.currentStepIndex + 1} / ${this.steps.length}</span>
+        <div style="display: flex; align-items: center;">
+          ${this.currentStepIndex > 0 ? `
+            <button id="btn-prev" style="margin-right: 8px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); color: #f8fafc; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s; font-family: inherit;">
+              ${labels.back}
+            </button>
+          ` : ''}
+          <button id="btn-next" style="background: #6366f1; border: none; color: #ffffff; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s; box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.4); font-family: inherit;">
+            ${this.currentStepIndex === this.steps.length - 1 ? labels.finish : labels.next}
+          </button>
         </div>
       </div>
     `;
@@ -135,52 +275,56 @@ export class OnboardingTour {
     document.body.appendChild(tooltip);
     this.tooltipElement = tooltip;
 
-    // Position tooltip near target
-    const rect = target.getBoundingClientRect();
-    const scrollX = window.scrollX || window.pageXOffset;
-    const scrollY = window.scrollY || window.pageYOffset;
+    // Calculate position
+    this.positionTooltip(target, tooltip, step.placement);
 
-    const tooltipRect = tooltip.getBoundingClientRect();
-
-    // Default placement: bottom
-    let left = rect.left + scrollX + (rect.width - tooltipRect.width) / 2;
-    let top = rect.bottom + scrollY + 8;
-
-    if (step.placement === 'top') {
-      left = rect.left + scrollX + (rect.width - tooltipRect.width) / 2;
-      top = rect.top + scrollY - tooltipRect.height - 8;
-    } else if (step.placement === 'left') {
-      left = rect.left + scrollX - tooltipRect.width - 8;
-      top = rect.top + scrollY + (rect.height - tooltipRect.height) / 2;
-    } else if (step.placement === 'right') {
-      left = rect.right + scrollX + 8;
-      top = rect.top + scrollY + (rect.height - tooltipRect.height) / 2;
+    // Hover effect styles dynamically
+    const skipBtn = tooltip.querySelector('#btn-skip') as HTMLElement;
+    if (skipBtn) {
+      skipBtn.addEventListener('mouseenter', () => skipBtn.style.color = '#f1f5f9');
+      skipBtn.addEventListener('mouseleave', () => skipBtn.style.color = '#94a3b8');
+      skipBtn.addEventListener('click', () => this.skip());
     }
 
-    tooltip.style.left = `${left}px`;
-    tooltip.style.top = `${top}px`;
+    const prevBtn = tooltip.querySelector('#btn-prev') as HTMLElement;
+    if (prevBtn) {
+      prevBtn.addEventListener('mouseenter', () => prevBtn.style.background = 'rgba(255, 255, 255, 0.15)');
+      prevBtn.addEventListener('mouseleave', () => prevBtn.style.background = 'rgba(255, 255, 255, 0.08)');
+      prevBtn.addEventListener('click', () => this.prev());
+    }
 
-    // Listeners
-    tooltip.querySelector('#btn-next')?.addEventListener('click', () => this.next());
-    tooltip.querySelector('#btn-prev')?.addEventListener('click', () => this.prev());
+    const nextBtn = tooltip.querySelector('#btn-next') as HTMLElement;
+    if (nextBtn) {
+      nextBtn.addEventListener('mouseenter', () => nextBtn.style.background = '#4f46e5');
+      nextBtn.addEventListener('mouseleave', () => nextBtn.style.background = '#6366f1');
+      nextBtn.addEventListener('click', () => this.next());
+    }
   }
 
   private renderCentralModal(step: TourStep): void {
-    // Render central modal
     const modal = document.createElement('div');
     modal.id = 'selecto-onboarding-modal';
-    modal.style.position = 'fixed';
-    modal.style.left = '50%';
-    modal.style.top = '50%';
-    modal.style.transform = 'translate(-50%, -50%)';
-    modal.style.backgroundColor = '#1e293b';
-    modal.style.color = '#ffffff';
-    modal.style.padding = '24px';
-    modal.style.borderRadius = '12px';
-    modal.style.boxShadow = '0 25px 50px -12px rgba(0, 0, 0, 0.5)';
-    modal.style.zIndex = '999999';
-    modal.style.maxWidth = '400px';
-    modal.style.width = '90%';
+    
+    // Apply premium styling
+    Object.assign(modal.style, {
+      position: 'fixed',
+      left: '50%',
+      top: '50%',
+      transform: 'translate(-50%, -50%)',
+      backgroundColor: 'rgba(15, 23, 42, 0.95)',
+      backdropFilter: 'blur(8px)',
+      webkitBackdropFilter: 'blur(8px)',
+      border: '1px solid rgba(255, 255, 255, 0.1)',
+      color: '#ffffff',
+      padding: '24px',
+      borderRadius: '16px',
+      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+      zIndex: '2147483647', // Above the highlight overlay (2147483646)
+      maxWidth: '400px',
+      width: '90%',
+      boxSizing: 'border-box',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+    });
 
     const locale = this.options.locale || 'en';
     const labels = {
@@ -189,13 +333,22 @@ export class OnboardingTour {
     };
 
     modal.innerHTML = `
-      <div style="font-weight: bold; font-size: 18px; margin-bottom: 12px;">${step.title}</div>
-      <div style="margin-bottom: 20px; font-size: 14px; color: #cbd5e1; line-height: 1.5;">${this.parseRichContent(step.content)}</div>
+      <div style="font-weight: bold; font-size: 18px; margin-bottom: 12px; color: #f8fafc; display: flex; justify-content: space-between; align-items: center;">
+        <span>${step.title}</span>
+        <button id="btn-skip" style="background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 16px; padding: 4px; line-height: 1; transition: color 0.2s;">✕</button>
+      </div>
+      <div style="margin-bottom: 20px; font-size: 14.5px; color: #cbd5e1; line-height: 1.5;">${this.parseRichContent(step.content)}</div>
       <div style="display: flex; justify-content: space-between; align-items: center;">
-        <span style="font-size: 12px; color: #94a3b8;">${this.currentStepIndex + 1}/${this.steps.length}</span>
-        <div>
-          ${this.currentStepIndex > 0 ? `<button id="btn-prev" style="margin-right: 8px;">${labels.back}</button>` : ''}
-          <button id="btn-next">${this.currentStepIndex === this.steps.length - 1 ? labels.finish : labels.next}</button>
+        <span style="font-size: 12px; color: #94a3b8; font-weight: 500;">${this.currentStepIndex + 1} / ${this.steps.length}</span>
+        <div style="display: flex; align-items: center;">
+          ${this.currentStepIndex > 0 ? `
+            <button id="btn-prev" style="margin-right: 8px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); color: #f8fafc; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s; font-family: inherit;">
+              ${labels.back}
+            </button>
+          ` : ''}
+          <button id="btn-next" style="background: #6366f1; border: none; color: #ffffff; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s; box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.4); font-family: inherit;">
+            ${this.currentStepIndex === this.steps.length - 1 ? labels.finish : labels.next}
+          </button>
         </div>
       </div>
     `;
@@ -203,8 +356,27 @@ export class OnboardingTour {
     document.body.appendChild(modal);
     this.tooltipElement = modal;
 
-    modal.querySelector('#btn-next')?.addEventListener('click', () => this.next());
-    modal.querySelector('#btn-prev')?.addEventListener('click', () => this.prev());
+    // Hover effect styles dynamically
+    const skipBtn = modal.querySelector('#btn-skip') as HTMLElement;
+    if (skipBtn) {
+      skipBtn.addEventListener('mouseenter', () => skipBtn.style.color = '#f1f5f9');
+      skipBtn.addEventListener('mouseleave', () => skipBtn.style.color = '#94a3b8');
+      skipBtn.addEventListener('click', () => this.skip());
+    }
+
+    const prevBtn = modal.querySelector('#btn-prev') as HTMLElement;
+    if (prevBtn) {
+      prevBtn.addEventListener('mouseenter', () => prevBtn.style.background = 'rgba(255, 255, 255, 0.15)');
+      prevBtn.addEventListener('mouseleave', () => prevBtn.style.background = 'rgba(255, 255, 255, 0.08)');
+      prevBtn.addEventListener('click', () => this.prev());
+    }
+
+    const nextBtn = modal.querySelector('#btn-next') as HTMLElement;
+    if (nextBtn) {
+      nextBtn.addEventListener('mouseenter', () => nextBtn.style.background = '#4f46e5');
+      nextBtn.addEventListener('mouseleave', () => nextBtn.style.background = '#6366f1');
+      nextBtn.addEventListener('click', () => this.next());
+    }
   }
 
   private applySpotlight(target: HTMLElement): void {
@@ -322,6 +494,14 @@ export class OnboardingTour {
     if (this.overlayInspector) {
       this.overlayInspector.stop();
       this.overlayInspector = null;
+    }
+
+    // Remove window resize/scroll listeners
+    window.removeEventListener('resize', this.handleResizeOrScroll);
+    window.removeEventListener('scroll', this.handleResizeOrScroll, { capture: true });
+
+    if (OnboardingTour.activeTourInstance === this) {
+      OnboardingTour.activeTourInstance = null;
     }
   }
 }

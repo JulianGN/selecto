@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Onboarding Discovery & Semantic Selector Test</title>
+  <style>
+    body {
+      background-color: #0f172a;
+      color: #f8fafc;
+      font-family: system-ui, sans-serif;
+      padding: 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .container {
+      max-width: 600px;
+      width: 100%;
+    }
+    .card {
+      background: #1e293b;
+      padding: 24px;
+      border-radius: 12px;
+      margin-bottom: 24px;
+      border: 1px solid #334155;
+    }
+    .btn {
+      background: #6366f1;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+    .btn-secondary {
+      background: #475569;
+    }
+    .input-field {
+      background: #0f172a;
+      border: 1px solid #334155;
+      color: white;
+      padding: 10px;
+      border-radius: 6px;
+      width: 100%;
+      box-sizing: border-box;
+      margin-top: 8px;
+      margin-bottom: 16px;
+    }
+    #log-output {
+      background: #020617;
+      border: 1px solid #334155;
+      padding: 12px;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 13px;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Onboarding & Selector Verification</h1>
+    <p>Test matching priority of stable test-ids and declarative onboarding steps.</p>
+
+    <!-- Test targets for semantic selectors -->
+    <div class="card">
+      <h2>1. Test targets for Semantic Selectors</h2>
+      <button id="btn-save" data-testid="save-btn" class="btn">
+        Save Button (data-testid)
+      </button>
+      <button id="btn-onboarding-test" data-onboarding-id="onb-special-btn" class="btn btn-secondary">
+        Special Button (data-onboarding-id)
+      </button>
+      <div style="margin-top: 16px;">
+        <button id="btn-get-selectors" class="btn">Generate Selectors for save-btn</button>
+      </div>
+      <div style="margin-top: 16px;">
+        <div id="log-output">Click the button above to check generated selectors.</div>
+      </div>
+    </div>
+
+    <!-- Onboarding discovery targets -->
+    <div class="card">
+      <h2>2. Declarative Onboarding (Zero-Config)</h2>
+      <p>The elements below have <code>data-tour-*</code> attributes. They will be auto-discovered by the SDK.</p>
+      
+      <div style="margin-bottom: 16px;">
+        <div data-tour-step="1" data-tour-title="Step 1: Introduction" data-tour-content="Welcome to our new features! Click Next to continue." data-tour-placement="bottom" style="padding: 12px; background: rgba(99,102,241,0.1); border: 1px solid #6366f1; border-radius: 6px;">
+          <strong>Target Element 1</strong> (data-tour-step="1")
+        </div>
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <input type="text" data-tour-step="2" data-tour-title="Step 2: Enter Name" data-tour-content="Write your name here so we can customize your dashboard." data-tour-placement="right" class="input-field" placeholder="Enter your name..." value="Juliana" />
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <button data-tour-step="3" data-tour-title="Step 3: Save & Finish" data-tour-content="Click here to finalize the setup." data-tour-placement="top" class="btn">
+          Finish Action (data-tour-step="3")
+        </button>
+      </div>
+
+      <button id="start-discovered-tour" class="btn" style="width: 100%; margin-top: 12px; background: #10b981;">
+        Start Discovered Tour
+      </button>
+    </div>
+  </div>
+
+  <!-- Load Selector Generator SDK -->
+  <script src="../packages/selector-sdk/selector-sdk.js"></script>
+  
+  <!-- Load Onboarding SDK as global script -->
+  <script src="../packages/onboarding-sdk/dist/index.global.js"></script>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const OnboardingTour = SelectoOnboarding.OnboardingTour;
+
+      // 1. Selector Generator Verification
+      const generateAndLogSelectors = () => {
+        const saveBtn = document.getElementById('btn-save');
+        const specialBtn = document.getElementById('btn-onboarding-test');
+
+        const cssSave = SelectorGenerator.getCssSelector(saveBtn);
+        const pwSave = SelectorGenerator.getPlaywrightLocator(saveBtn);
+        const cySave = SelectorGenerator.getCypressLocator(saveBtn);
+
+        const cssSpecial = SelectorGenerator.getCssSelector(specialBtn);
+        const pwSpecial = SelectorGenerator.getPlaywrightLocator(specialBtn);
+        const cySpecial = SelectorGenerator.getCypressLocator(specialBtn);
+
+        document.getElementById('log-output').textContent = 
+          `[data-testid="save-btn"]:\n` +
+          `  CSS: ${cssSave}\n` +
+          `  Playwright: ${pwSave}\n` +
+          `  Cypress: ${cySave}\n\n` +
+          `[data-onboarding-id="onb-special-btn"]:\n` +
+          `  CSS: ${cssSpecial}\n` +
+          `  Playwright: ${pwSpecial}\n` +
+          `  Cypress: ${cySpecial}`;
+      };
+
+      document.getElementById('btn-get-selectors').addEventListener('click', generateAndLogSelectors);
+      document.getElementById('btn-save').addEventListener('click', generateAndLogSelectors);
+      document.getElementById('btn-onboarding-test').addEventListener('click', generateAndLogSelectors);
+
+      // 2. Onboarding Discovery Verification
+      document.getElementById('start-discovered-tour').addEventListener('click', () => {
+        const tour = OnboardingTour.discoverFromDOM({
+          locale: 'pt-BR',
+          onStart: () => console.log('Tour started!'),
+          onComplete: () => console.log('Tour completed!'),
+          onSkip: () => console.log('Tour skipped!')
+        });
+
+        console.log('Discovered Tour Steps:', tour);
+        tour.start();
+      });
+    });
+  </script>
+</body>
+</html>

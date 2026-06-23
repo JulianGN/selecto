@@ -450,9 +450,7 @@
             if (callback) setTimeout(() => callback({ success: true }), 0);
           },
           // Method to return extension assets paths
-          getURL: function(path) {
-            return path;
-          }
+          getURL: function(path) { return '../apps/chrome-extension/' + path; }
         }
       };
 
@@ -590,8 +588,8 @@
   </div>
 
   <!-- LOAD SCRIPTS (FIRST THE SDK, THEN CONTENT SCRIPT) -->
-  <script src="packages/selector-sdk/selector-sdk.js"></script>
-  <script src="apps/chrome-extension/content.js"></script>
+  <script src="../packages/selector-sdk/selector-sdk.js"></script>
+  <script src="../apps/chrome-extension/content.js"></script>
 
   <!-- POPUP SIMULATION CONTROLLER -->
   <script>
