@@ -245,6 +245,19 @@ export default function DashboardClient({ initialFlows, initialStats }: Dashboar
     setIsModalOpen(true);
   };
 
+  const startVisualBuilder = () => {
+    import("selecto-onboarding-sdk").then(({ OnboardingBuilder }) => {
+      const builder = new OnboardingBuilder({
+        dashboardUrl: window.location.origin,
+        locale: locale === "pt-br" ? "pt-BR" : locale,
+        onSave: () => {
+          window.location.reload();
+        }
+      });
+      builder.start();
+    });
+  };
+
   // 5. Save Flow Mutation
   const handleSaveFlow = async () => {
     if (!editingFlow || !editingFlow.name?.trim()) {
@@ -545,13 +558,22 @@ export default function DashboardClient({ initialFlows, initialStats }: Dashboar
               </p>
             </div>
 
-            <button
-              onClick={openCreateModal}
-              className="flex items-center justify-center gap-2 px-5 py-3 bg-primary hover:bg-primary-foreground/90 text-primary-foreground font-semibold rounded-xl transition duration-200 cursor-pointer shadow-lg shadow-primary/20 hover:scale-[1.02]"
-            >
-              <Plus className="w-5 h-5" />
-              {t("createFlow")}
-            </button>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              <button
+                onClick={startVisualBuilder}
+                className="flex items-center justify-center gap-2 px-5 py-3 bg-secondary hover:bg-secondary/70 border border-border text-slate-200 font-semibold rounded-xl transition duration-200 cursor-pointer hover:scale-[1.02] shadow-md shadow-black/10"
+              >
+                <Settings className="w-5 h-5 text-indigo-400" />
+                {t("visualBuilderSandbox")}
+              </button>
+              <button
+                onClick={openCreateModal}
+                className="flex items-center justify-center gap-2 px-5 py-3 bg-primary hover:bg-primary-foreground/90 text-primary-foreground font-semibold rounded-xl transition duration-200 cursor-pointer shadow-lg shadow-primary/20 hover:scale-[1.02]"
+              >
+                <Plus className="w-5 h-5" />
+                {t("createFlow")}
+              </button>
+            </div>
           </header>
 
           {/* 📊 Stats Grid */}

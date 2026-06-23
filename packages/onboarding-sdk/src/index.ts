@@ -325,3 +325,5 @@ export class OnboardingTour {
     }
   }
 }
+
+export { OnboardingBuilder, BuilderOptions } from './builder';
