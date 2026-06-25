@@ -143,6 +143,19 @@ function parseRichContent(content: string): string {
   return parsedLines.join('\n');
 }
 
+function displayDescription(desc: string | null): string {
+  if (!desc) return "";
+  if (desc.startsWith("{")) {
+    try {
+      const parsed = JSON.parse(desc);
+      return parsed.text || "";
+    } catch {
+      return desc;
+    }
+  }
+  return desc;
+}
+
 interface DashboardClientProps {
   initialFlows: Flow[];
   initialStats: Stats;
@@ -158,6 +171,11 @@ export default function DashboardClient({ initialFlows, initialStats }: Dashboar
   const [editorMode, setEditorMode] = useState<"visual" | "raw">("visual");
   const [rawImportText, setRawImportText] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+
+  const [flowDescriptionText, setFlowDescriptionText] = useState("");
+  const [flowThemeColor, setFlowThemeColor] = useState("#6366f1");
+  const [flowThemeBg, setFlowThemeBg] = useState("#0f172a");
+  const [flowThemeText, setFlowThemeText] = useState("#ffffff");
 
   const [locale, setLocale] = useState<"en" | "pt-br" | "es">("en");
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
@@ -227,6 +245,10 @@ export default function DashboardClient({ initialFlows, initialStats }: Dashboar
   const openCreateModal = () => {
     setIsEditMode(false);
     setEditorMode("visual");
+    setFlowDescriptionText("");
+    setFlowThemeColor("#6366f1");
+    setFlowThemeBg("#0f172a");
+    setFlowThemeText("#ffffff");
     setEditingFlow({
       name: "",
       description: "",
@@ -240,6 +262,28 @@ export default function DashboardClient({ initialFlows, initialStats }: Dashboar
   const openEditModal = (flow: Flow) => {
     setIsEditMode(true);
     setEditorMode("visual");
+
+    let text = flow.description || "";
+    let primaryColor = "#6366f1";
+    let backgroundColor = "#0f172a";
+    let textColor = "#ffffff";
+    try {
+      if (flow.description && flow.description.startsWith("{")) {
+        const parsed = JSON.parse(flow.description);
+        text = parsed.text || "";
+        primaryColor = parsed.primaryColor || "#6366f1";
+        backgroundColor = parsed.backgroundColor || "#0f172a";
+        textColor = parsed.textColor || "#ffffff";
+      }
+    } catch (e) {
+      console.error("Error parsing flow description json:", e);
+    }
+
+    setFlowDescriptionText(text);
+    setFlowThemeColor(primaryColor);
+    setFlowThemeBg(backgroundColor);
+    setFlowThemeText(textColor);
+
     // Deep clone to avoid direct state mutation
     setEditingFlow(JSON.parse(JSON.stringify(flow)));
     setIsModalOpen(true);
@@ -278,10 +322,17 @@ export default function DashboardClient({ initialFlows, initialStats }: Dashboar
       stepIndex: idx
     }));
 
+    const descriptionJson = JSON.stringify({
+      text: flowDescriptionText,
+      primaryColor: flowThemeColor,
+      backgroundColor: flowThemeBg,
+      textColor: flowThemeText
+    });
+
     const flowToSave = {
       ...editingFlow,
       name: editingFlow.name,
-      description: editingFlow.description || "",
+      description: descriptionJson,
       isActive: !!editingFlow.isActive,
       steps: formattedSteps
     };
@@ -467,11 +518,14 @@ export default function DashboardClient({ initialFlows, initialStats }: Dashboar
     setEditorMode(newMode);
   };
 
-  const filteredFlows = flows.filter(flow => 
-    flow.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    (flow.description && flow.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    flow.id.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredFlows = flows.filter(flow => {
+    const descText = displayDescription(flow.description);
+    return (
+      flow.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      descText.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      flow.id.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  });
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -666,7 +720,7 @@ export default function DashboardClient({ initialFlows, initialStats }: Dashboar
                           <span className="text-xs text-muted-foreground/50 block font-mono mt-1">ID: {flow.id}</span>
                         </td>
                         <td className="p-6 text-muted-foreground text-sm max-w-xs truncate">
-                          {flow.description || <span className="italic opacity-40">No description</span>}
+                          {displayDescription(flow.description) || <span className="italic opacity-40">No description</span>}
                         </td>
                         <td className="p-6">
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
@@ -740,7 +794,7 @@ export default function DashboardClient({ initialFlows, initialStats }: Dashboar
             <div className="flex-1 overflow-y-auto p-6 space-y-8">
               {/* Core Flow Details */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-secondary/30 p-6 rounded-2xl border border-border/60">
-                <div className="space-y-2">
+                <div className="space-y-2 md:col-span-2">
                   <label className="text-sm font-bold text-slate-300">{t("fieldFlowName")}</label>
                   <input
                     type="text"
@@ -751,15 +805,90 @@ export default function DashboardClient({ initialFlows, initialStats }: Dashboar
                   />
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-2 md:col-span-2">
                   <label className="text-sm font-bold text-slate-300">{t("fieldDescription")}</label>
                   <input
                     type="text"
-                    value={editingFlow.description || ""}
-                    onChange={e => setEditingFlow({ ...editingFlow, description: e.target.value })}
+                    value={flowDescriptionText}
+                    onChange={e => setFlowDescriptionText(e.target.value)}
                     placeholder={t("fieldDescriptionPlaceholder")}
                     className="w-full px-4 py-2.5 bg-background border border-border rounded-xl focus:ring-1 focus:ring-primary focus:border-primary outline-none transition text-sm"
                   />
+                </div>
+
+                {/* Theme Customization Colors */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:col-span-2 border-t border-border/40 pt-6">
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-slate-300">{t("fieldThemeColor")}</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="color"
+                        value={flowThemeColor}
+                        onChange={e => setFlowThemeColor(e.target.value)}
+                        className="w-12 h-10 p-1 bg-background border border-border rounded-xl cursor-pointer"
+                      />
+                      <input
+                        type="text"
+                        value={flowThemeColor}
+                        onChange={e => {
+                          const val = e.target.value;
+                          if (val.startsWith("#") && val.length <= 7) {
+                            setFlowThemeColor(val);
+                          }
+                        }}
+                        placeholder="#6366f1"
+                        className="flex-1 px-4 py-2 bg-background border border-border rounded-xl focus:ring-1 focus:ring-primary focus:border-primary outline-none transition text-sm font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-slate-300">{t("fieldThemeBg")}</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="color"
+                        value={flowThemeBg}
+                        onChange={e => setFlowThemeBg(e.target.value)}
+                        className="w-12 h-10 p-1 bg-background border border-border rounded-xl cursor-pointer"
+                      />
+                      <input
+                        type="text"
+                        value={flowThemeBg}
+                        onChange={e => {
+                          const val = e.target.value;
+                          if (val.startsWith("#") && val.length <= 7) {
+                            setFlowThemeBg(val);
+                          }
+                        }}
+                        placeholder="#0f172a"
+                        className="flex-1 px-4 py-2 bg-background border border-border rounded-xl focus:ring-1 focus:ring-primary focus:border-primary outline-none transition text-sm font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-slate-300">{t("fieldThemeText")}</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="color"
+                        value={flowThemeText}
+                        onChange={e => setFlowThemeText(e.target.value)}
+                        className="w-12 h-10 p-1 bg-background border border-border rounded-xl cursor-pointer"
+                      />
+                      <input
+                        type="text"
+                        value={flowThemeText}
+                        onChange={e => {
+                          const val = e.target.value;
+                          if (val.startsWith("#") && val.length <= 7) {
+                            setFlowThemeText(val);
+                          }
+                        }}
+                        placeholder="#ffffff"
+                        className="flex-1 px-4 py-2 bg-background border border-border rounded-xl focus:ring-1 focus:ring-primary focus:border-primary outline-none transition text-sm font-mono"
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 {!isEditMode && (

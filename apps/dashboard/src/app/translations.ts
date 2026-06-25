@@ -51,7 +51,10 @@ export const translations = {
     errorFlowNameRequired: "Flow Name is required.",
     errorSavingFlow: "Error saving flow: ",
     rawEditorPlaceholder: "Import or export selectors here. Format can be standard code comments + CSS selectors, or a JSON array exported from the extension.",
-    rawEditorTip: "Tip: You can copy element selectors directly from the Selecto Chrome extension, paste them here, and they will automatically parse into onboarding steps!"
+    rawEditorTip: "Tip: You can copy element selectors directly from the Selecto Chrome extension, paste them here, and they will automatically parse into onboarding steps!",
+    fieldThemeColor: "Accent Color",
+    fieldThemeBg: "Modal Background",
+    fieldThemeText: "Text Color"
   },
   "pt-br": {
     navTitle: "Console de Controle Selecto",
@@ -105,7 +108,10 @@ export const translations = {
     errorFlowNameRequired: "Nome do Fluxo é obrigatório.",
     errorSavingFlow: "Erro ao salvar o fluxo: ",
     rawEditorPlaceholder: "Importe ou exporte seletores aqui. O formato pode ser comentários de código padrão + seletores CSS, ou uma matriz JSON exportada da extensão.",
-    rawEditorTip: "Dica: Você pode copiar os seletores de elementos diretamente da extensão do Chrome Selecto, colá-los aqui e eles serão analisados automaticamente como etapas de onboarding!"
+    rawEditorTip: "Dica: Você pode copiar os seletores de elementos diretamente da extensão do Chrome Selecto, colá-los aqui e eles serão analisados automaticamente como etapas de onboarding!",
+    fieldThemeColor: "Cor de Destaque",
+    fieldThemeBg: "Fundo da Modal",
+    fieldThemeText: "Cor do Texto"
   },
   es: {
     navTitle: "Consola de Control Selecto",
@@ -159,6 +165,9 @@ export const translations = {
     errorFlowNameRequired: "El nombre del flujo es obligatorio.",
     errorSavingFlow: "Error al guardar el flujo: ",
     rawEditorPlaceholder: "Importe o exporte selectores aquí. El formato puede ser comentarios de código estándar + selectores CSS, o una matriz JSON exportada desde la extensión.",
-    rawEditorTip: "Sugerencia: ¡Puede copiar selectores de elementos directamente desde la extensión Selecto Chrome, pegarlos aquí y se analizarán automáticamente en pasos de inducción!"
+    rawEditorTip: "Sugerencia: ¡Puede copiar selectores de elementos directamente desde la extensión Selecto Chrome, pegarlos aquí y se analizarán automáticamente en pasos de inducción!",
+    fieldThemeColor: "Color de Acento",
+    fieldThemeBg: "Fondo del Modal",
+    fieldThemeText: "Color del Texto"
   }
 };

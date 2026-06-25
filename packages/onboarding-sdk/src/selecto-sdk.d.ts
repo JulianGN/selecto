@@ -14,6 +14,7 @@ declare module 'selecto-sdk' {
     enableFade?: boolean;
     fadeOpacity?: number;
     showLabel?: boolean;
+    highlightColor?: string;
   }
 
   export class ElementInspector {
@@ -23,6 +24,7 @@ declare module 'selecto-sdk' {
     setEnableFade(enable: boolean): void;
     setFadeOpacity(opacity: number): void;
     setShowLabel(show: boolean): void;
+    setHighlightColor(color: string): void;
     highlightElement(element: Element | null): void;
   }
 }

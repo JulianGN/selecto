@@ -18,6 +18,11 @@ export interface TourOptions {
     back?: string;
     finish?: string;
   };
+  theme?: {
+    primaryColor?: string;
+    backgroundColor?: string;
+    textColor?: string;
+  };
   onStart?: () => void;
   onStepChange?: (stepIndex: number, step: TourStep) => void;
   onComplete?: () => void;
@@ -94,6 +99,51 @@ export class OnboardingTour {
     });
   }
 
+  public static async loadAndStart(tourId: string, options: Omit<TourOptions, 'steps'> & { dashboardUrl: string }): Promise<OnboardingTour> {
+    const { dashboardUrl, ...tourOptions } = options;
+    const cleanUrl = dashboardUrl.endsWith('/') ? dashboardUrl.slice(0, -1) : dashboardUrl;
+    
+    const response = await fetch(`${cleanUrl}/api/v1/flows`);
+    const data = await response.json();
+    if (!data.success || !data.flows) {
+      throw new Error(data.error || 'Failed to load flows from Selecto Dashboard');
+    }
+    
+    const flow = data.flows.find((f: any) => f.id === tourId);
+    if (!flow) {
+      throw new Error(`Selecto flow not found: ${tourId}`);
+    }
+    
+    const theme = (() => {
+      try {
+        if (flow.description && flow.description.startsWith('{')) {
+          const json = JSON.parse(flow.description);
+          return {
+            primaryColor: json.primaryColor,
+            backgroundColor: json.backgroundColor,
+            textColor: json.textColor
+          };
+        }
+      } catch {}
+      return undefined;
+    })();
+
+    const tour = new OnboardingTour({
+      ...tourOptions,
+      theme: theme || tourOptions.theme,
+      steps: flow.steps.map((step: any) => ({
+        id: step.id,
+        title: step.title,
+        content: step.content,
+        targetSelector: step.targetSelector || undefined,
+        placement: step.placement
+      }))
+    });
+    
+    tour.start();
+    return tour;
+  }
+
   private static activeTourInstance: OnboardingTour | null = null;
 
   constructor(options: TourOptions) {
@@ -152,6 +202,17 @@ export class OnboardingTour {
 
     tooltip.style.left = `${left}px`;
     tooltip.style.top = `${top}px`;
+  }
+
+  private hexToRgba(hex: string, alpha: number): string {
+    let cleanHex = hex.replace('#', '');
+    if (cleanHex.length === 3) {
+      cleanHex = cleanHex.split('').map(c => c + c).join('');
+    }
+    const r = parseInt(cleanHex.substring(0, 2), 16) || 99;
+    const g = parseInt(cleanHex.substring(2, 4), 16) || 102;
+    const b = parseInt(cleanHex.substring(4, 6), 16) || 241;
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   }
 
   public start(): void {
@@ -227,14 +288,18 @@ export class OnboardingTour {
     const tooltip = document.createElement('div');
     tooltip.id = 'selecto-onboarding-tooltip';
     
+    const textColor = this.options.theme?.textColor || '#ffffff';
+    const mutedTextColor = this.hexToRgba(textColor, 0.7);
+    const borderColor = this.hexToRgba(textColor, 0.15);
+
     // Apply premium styling
     Object.assign(tooltip.style, {
       position: 'fixed',
-      backgroundColor: 'rgba(15, 23, 42, 0.95)',
+      backgroundColor: this.options.theme?.backgroundColor ? this.hexToRgba(this.options.theme.backgroundColor, 0.95) : 'rgba(15, 23, 42, 0.95)',
       backdropFilter: 'blur(8px)',
       webkitBackdropFilter: 'blur(8px)',
-      border: '1px solid rgba(255, 255, 255, 0.1)',
-      color: '#ffffff',
+      border: `1px solid ${borderColor}`,
+      color: textColor,
       padding: '16px',
       borderRadius: '12px',
       boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4)',
@@ -251,21 +316,26 @@ export class OnboardingTour {
       ...this.options.labels
     };
 
+    const primaryColor = this.options.theme?.primaryColor || '#6366f1';
+    const nextShadow = this.options.theme?.primaryColor 
+      ? this.hexToRgba(this.options.theme.primaryColor, 0.4) 
+      : 'rgba(99, 102, 241, 0.4)';
+
     tooltip.innerHTML = `
-      <div style="font-weight: bold; margin-bottom: 8px; font-size: 15px; color: #f8fafc; display: flex; justify-content: space-between; align-items: center;">
+      <div style="font-weight: bold; margin-bottom: 8px; font-size: 15px; color: ${textColor}; display: flex; justify-content: space-between; align-items: center;">
         <span>${step.title}</span>
-        <button id="btn-skip" style="background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 16px; padding: 4px; line-height: 1; transition: color 0.2s;">✕</button>
+        <button id="btn-skip" style="background: none; border: none; color: ${mutedTextColor}; cursor: pointer; font-size: 16px; padding: 4px; line-height: 1; transition: color 0.2s;">✕</button>
       </div>
-      <div style="margin-bottom: 16px; font-size: 13.5px; color: #cbd5e1; line-height: 1.4;">${this.parseRichContent(step.content)}</div>
+      <div style="margin-bottom: 16px; font-size: 13.5px; color: ${mutedTextColor}; line-height: 1.4;">${this.parseRichContent(step.content)}</div>
       <div style="display: flex; justify-content: space-between; align-items: center;">
-        <span style="font-size: 12px; color: #94a3b8; font-weight: 500;">${this.currentStepIndex + 1} / ${this.steps.length}</span>
+        <span style="font-size: 12px; color: ${mutedTextColor}; font-weight: 500;">${this.currentStepIndex + 1} / ${this.steps.length}</span>
         <div style="display: flex; align-items: center;">
           ${this.currentStepIndex > 0 ? `
-            <button id="btn-prev" style="margin-right: 8px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); color: #f8fafc; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s; font-family: inherit;">
+            <button id="btn-prev" style="margin-right: 8px; background: ${this.hexToRgba(textColor, 0.08)}; border: 1px solid ${borderColor}; color: ${textColor}; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s; font-family: inherit;">
               ${labels.back}
             </button>
           ` : ''}
-          <button id="btn-next" style="background: #6366f1; border: none; color: #ffffff; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s; box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.4); font-family: inherit;">
+          <button id="btn-next" style="background: ${primaryColor}; border: none; color: #ffffff; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s; box-shadow: 0 4px 6px -1px ${nextShadow}; font-family: inherit;">
             ${this.currentStepIndex === this.steps.length - 1 ? labels.finish : labels.next}
           </button>
         </div>
@@ -281,22 +351,22 @@ export class OnboardingTour {
     // Hover effect styles dynamically
     const skipBtn = tooltip.querySelector('#btn-skip') as HTMLElement;
     if (skipBtn) {
-      skipBtn.addEventListener('mouseenter', () => skipBtn.style.color = '#f1f5f9');
-      skipBtn.addEventListener('mouseleave', () => skipBtn.style.color = '#94a3b8');
+      skipBtn.addEventListener('mouseenter', () => skipBtn.style.color = textColor);
+      skipBtn.addEventListener('mouseleave', () => skipBtn.style.color = mutedTextColor);
       skipBtn.addEventListener('click', () => this.skip());
     }
 
     const prevBtn = tooltip.querySelector('#btn-prev') as HTMLElement;
     if (prevBtn) {
-      prevBtn.addEventListener('mouseenter', () => prevBtn.style.background = 'rgba(255, 255, 255, 0.15)');
-      prevBtn.addEventListener('mouseleave', () => prevBtn.style.background = 'rgba(255, 255, 255, 0.08)');
+      prevBtn.addEventListener('mouseenter', () => prevBtn.style.background = this.hexToRgba(textColor, 0.15));
+      prevBtn.addEventListener('mouseleave', () => prevBtn.style.background = this.hexToRgba(textColor, 0.08));
       prevBtn.addEventListener('click', () => this.prev());
     }
 
     const nextBtn = tooltip.querySelector('#btn-next') as HTMLElement;
     if (nextBtn) {
-      nextBtn.addEventListener('mouseenter', () => nextBtn.style.background = '#4f46e5');
-      nextBtn.addEventListener('mouseleave', () => nextBtn.style.background = '#6366f1');
+      nextBtn.addEventListener('mouseenter', () => nextBtn.style.filter = 'brightness(0.85)');
+      nextBtn.addEventListener('mouseleave', () => nextBtn.style.filter = 'none');
       nextBtn.addEventListener('click', () => this.next());
     }
   }
@@ -305,17 +375,21 @@ export class OnboardingTour {
     const modal = document.createElement('div');
     modal.id = 'selecto-onboarding-modal';
     
+    const textColor = this.options.theme?.textColor || '#ffffff';
+    const mutedTextColor = this.hexToRgba(textColor, 0.7);
+    const borderColor = this.hexToRgba(textColor, 0.15);
+
     // Apply premium styling
     Object.assign(modal.style, {
       position: 'fixed',
       left: '50%',
       top: '50%',
       transform: 'translate(-50%, -50%)',
-      backgroundColor: 'rgba(15, 23, 42, 0.95)',
+      backgroundColor: this.options.theme?.backgroundColor ? this.hexToRgba(this.options.theme.backgroundColor, 0.95) : 'rgba(15, 23, 42, 0.95)',
       backdropFilter: 'blur(8px)',
       webkitBackdropFilter: 'blur(8px)',
-      border: '1px solid rgba(255, 255, 255, 0.1)',
-      color: '#ffffff',
+      border: `1px solid ${borderColor}`,
+      color: textColor,
       padding: '24px',
       borderRadius: '16px',
       boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
@@ -332,21 +406,26 @@ export class OnboardingTour {
       ...this.options.labels
     };
 
+    const primaryColor = this.options.theme?.primaryColor || '#6366f1';
+    const nextShadow = this.options.theme?.primaryColor 
+      ? this.hexToRgba(this.options.theme.primaryColor, 0.4) 
+      : 'rgba(99, 102, 241, 0.4)';
+
     modal.innerHTML = `
-      <div style="font-weight: bold; font-size: 18px; margin-bottom: 12px; color: #f8fafc; display: flex; justify-content: space-between; align-items: center;">
+      <div style="font-weight: bold; font-size: 18px; margin-bottom: 12px; color: ${textColor}; display: flex; justify-content: space-between; align-items: center;">
         <span>${step.title}</span>
-        <button id="btn-skip" style="background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 16px; padding: 4px; line-height: 1; transition: color 0.2s;">✕</button>
+        <button id="btn-skip" style="background: none; border: none; color: ${mutedTextColor}; cursor: pointer; font-size: 16px; padding: 4px; line-height: 1; transition: color 0.2s;">✕</button>
       </div>
-      <div style="margin-bottom: 20px; font-size: 14.5px; color: #cbd5e1; line-height: 1.5;">${this.parseRichContent(step.content)}</div>
+      <div style="margin-bottom: 20px; font-size: 14.5px; color: ${mutedTextColor}; line-height: 1.5;">${this.parseRichContent(step.content)}</div>
       <div style="display: flex; justify-content: space-between; align-items: center;">
-        <span style="font-size: 12px; color: #94a3b8; font-weight: 500;">${this.currentStepIndex + 1} / ${this.steps.length}</span>
+        <span style="font-size: 12px; color: ${mutedTextColor}; font-weight: 500;">${this.currentStepIndex + 1} / ${this.steps.length}</span>
         <div style="display: flex; align-items: center;">
           ${this.currentStepIndex > 0 ? `
-            <button id="btn-prev" style="margin-right: 8px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); color: #f8fafc; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s; font-family: inherit;">
+            <button id="btn-prev" style="margin-right: 8px; background: ${this.hexToRgba(textColor, 0.08)}; border: 1px solid ${borderColor}; color: ${textColor}; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s; font-family: inherit;">
               ${labels.back}
             </button>
           ` : ''}
-          <button id="btn-next" style="background: #6366f1; border: none; color: #ffffff; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s; box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.4); font-family: inherit;">
+          <button id="btn-next" style="background: ${primaryColor}; border: none; color: #ffffff; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s; box-shadow: 0 4px 6px -1px ${nextShadow}; font-family: inherit;">
             ${this.currentStepIndex === this.steps.length - 1 ? labels.finish : labels.next}
           </button>
         </div>
@@ -359,22 +438,22 @@ export class OnboardingTour {
     // Hover effect styles dynamically
     const skipBtn = modal.querySelector('#btn-skip') as HTMLElement;
     if (skipBtn) {
-      skipBtn.addEventListener('mouseenter', () => skipBtn.style.color = '#f1f5f9');
-      skipBtn.addEventListener('mouseleave', () => skipBtn.style.color = '#94a3b8');
+      skipBtn.addEventListener('mouseenter', () => skipBtn.style.color = textColor);
+      skipBtn.addEventListener('mouseleave', () => skipBtn.style.color = mutedTextColor);
       skipBtn.addEventListener('click', () => this.skip());
     }
 
     const prevBtn = modal.querySelector('#btn-prev') as HTMLElement;
     if (prevBtn) {
-      prevBtn.addEventListener('mouseenter', () => prevBtn.style.background = 'rgba(255, 255, 255, 0.15)');
-      prevBtn.addEventListener('mouseleave', () => prevBtn.style.background = 'rgba(255, 255, 255, 0.08)');
+      prevBtn.addEventListener('mouseenter', () => prevBtn.style.background = this.hexToRgba(textColor, 0.15));
+      prevBtn.addEventListener('mouseleave', () => prevBtn.style.background = this.hexToRgba(textColor, 0.08));
       prevBtn.addEventListener('click', () => this.prev());
     }
 
     const nextBtn = modal.querySelector('#btn-next') as HTMLElement;
     if (nextBtn) {
-      nextBtn.addEventListener('mouseenter', () => nextBtn.style.background = '#4f46e5');
-      nextBtn.addEventListener('mouseleave', () => nextBtn.style.background = '#6366f1');
+      nextBtn.addEventListener('mouseenter', () => nextBtn.style.filter = 'brightness(0.85)');
+      nextBtn.addEventListener('mouseleave', () => nextBtn.style.filter = 'none');
       nextBtn.addEventListener('click', () => this.next());
     }
   }
@@ -385,8 +464,11 @@ export class OnboardingTour {
       this.overlayInspector = new ElementInspector({
         enableFade: true,
         fadeOpacity: 0.6,
-        showLabel: false
+        showLabel: false,
+        highlightColor: this.options.theme?.primaryColor || '#6366f1'
       });
+    } else {
+      this.overlayInspector.setHighlightColor(this.options.theme?.primaryColor || '#6366f1');
     }
     this.overlayInspector.highlightElement(target);
   }

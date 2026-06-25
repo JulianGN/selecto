@@ -243,6 +243,7 @@
       this.enableFade = options.enableFade !== undefined ? options.enableFade : true;
       this.fadeOpacity = options.fadeOpacity !== undefined ? options.fadeOpacity : 0.6;
       this.showLabel = options.showLabel !== undefined ? options.showLabel : true;
+      this.highlightColor = options.highlightColor || '#6366f1';
 
       this.active = false;
       this.isProgrammaticHighlight = false;
@@ -259,6 +260,36 @@
       this._handleKeyDown = this._handleKeyDown.bind(this);
       this._handleKeyUp = this._handleKeyUp.bind(this);
       this._updateOverlayPosition = this._updateOverlayPosition.bind(this);
+    }
+
+    /**
+     * Helper to modify opacity/alpha of Hex/RGB/RGBA strings.
+     * @private
+     */
+    _getColorWithOpacity(colorStr, opacity) {
+      try {
+        let clean = colorStr.trim();
+        if (clean.startsWith('rgba')) {
+          return clean.replace(/,?\s*[\d\.]+\s*\)$/, `, ${opacity})`);
+        }
+        if (clean.startsWith('rgb')) {
+          return clean.replace('rgb', 'rgba').replace(')', `, ${opacity})`);
+        }
+        if (clean.startsWith('#')) {
+          let hex = clean.replace('#', '');
+          if (hex.length === 3) {
+            hex = hex.split('').map(c => c + c).join('');
+          }
+          if (hex.length === 8) {
+            hex = hex.substring(0, 6);
+          }
+          const r = parseInt(hex.substring(0, 2), 16) || 99;
+          const g = parseInt(hex.substring(2, 4), 16) || 102;
+          const b = parseInt(hex.substring(4, 6), 16) || 241;
+          return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+        }
+      } catch (e) {}
+      return `rgba(99, 102, 241, ${opacity})`;
     }
 
     /**
@@ -294,14 +325,35 @@
     }
 
     /**
+     * Programmatically update the highlight color.
+     * @param {string} color - The color value (HEX, RGB, RGBA).
+     */
+    setHighlightColor(color) {
+      this.highlightColor = color || '#6366f1';
+      if (this.overlay) {
+        const borderColor = this._getColorWithOpacity(this.highlightColor, 0.95);
+        const bgColor = this._getColorWithOpacity(this.highlightColor, 0.08);
+        this.overlay.style.border = `2px solid ${borderColor}`;
+        this.overlay.style.background = bgColor;
+        
+        const label = this.overlay.querySelector('#selector-sdk-overlay-label');
+        if (label) {
+          label.style.backgroundColor = this._getColorWithOpacity(this.highlightColor, 0.95);
+        }
+        this._updateOverlayShadow();
+      }
+    }
+
+    /**
      * Updates the box-shadow style property of the overlay element.
      * @private
      */
     _updateOverlayShadow() {
       if (this.overlay) {
+        const glowColor = this._getColorWithOpacity(this.highlightColor, 0.6);
         this.overlay.style.boxShadow = this.enableFade
-          ? `0 0 0 99999px rgba(15, 23, 42, ${this.fadeOpacity}), 0 0 15px rgba(99, 102, 241, 0.6)`
-          : '0 0 12px rgba(99, 102, 241, 0.3)';
+          ? `0 0 0 99999px rgba(15, 23, 42, ${this.fadeOpacity}), 0 0 15px ${glowColor}`
+          : `0 0 12px ${glowColor}`;
       }
     }
 
@@ -359,13 +411,16 @@
       this.overlay = document.createElement('div');
       this.overlay.id = 'selector-sdk-overlay';
       
+      const borderColor = this._getColorWithOpacity(this.highlightColor, 0.95);
+      const bgColor = this._getColorWithOpacity(this.highlightColor, 0.08);
+
       // Inject inline styles for robust rendering without external stylesheets
       Object.assign(this.overlay.style, {
         position: 'absolute',
         pointerEvents: 'none',
         zIndex: '2147483646',
-        border: '2px solid rgba(99, 102, 241, 0.95)', // Indigo border
-        background: 'rgba(99, 102, 241, 0.08)',      // Light indigo wash
+        border: `2px solid ${borderColor}`,
+        background: bgColor,
         borderRadius: '4px',
         transition: 'all 0.08s ease-out',
         boxSizing: 'border-box',
@@ -376,12 +431,13 @@
       // Simple tag label on overlay
       const label = document.createElement('span');
       label.id = 'selector-sdk-overlay-label';
+      const labelBg = this._getColorWithOpacity(this.highlightColor, 0.95);
       Object.assign(label.style, {
         position: 'absolute',
         bottom: '100%',
         left: '0',
         transform: 'translateY(-4px)',
-        backgroundColor: 'rgba(99, 102, 241, 0.95)',
+        backgroundColor: labelBg,
         color: '#ffffff',
         padding: '2px 6px',
         borderRadius: '3px',

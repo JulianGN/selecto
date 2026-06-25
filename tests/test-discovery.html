@@ -106,6 +106,10 @@
       <button id="start-discovered-tour" class="btn" style="width: 100%; margin-top: 12px; background: #10b981;">
         Start Discovered Tour
       </button>
+
+      <button id="open-visual-builder" class="btn" style="width: 100%; margin-top: 12px; background: #6366f1;">
+        Open Visual Builder
+      </button>
     </div>
   </div>
 
@@ -118,6 +122,7 @@
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const OnboardingTour = SelectoOnboarding.OnboardingTour;
+      const OnboardingBuilder = SelectoOnboarding.OnboardingBuilder;
 
       // 1. Selector Generator Verification
       const generateAndLogSelectors = () => {
@@ -158,6 +163,19 @@
 
         console.log('Discovered Tour Steps:', tour);
         tour.start();
+      });
+
+      // 3. Open Visual Builder Verification
+      document.getElementById('open-visual-builder').addEventListener('click', () => {
+        const builder = new OnboardingBuilder({
+          dashboardUrl: 'http://localhost:3000',
+          locale: 'pt-BR',
+          onSave: (tourId) => console.log('Saved tour!', tourId),
+          onClose: () => console.log('Builder closed!')
+        });
+
+        console.log('Starting builder...', builder);
+        builder.start();
       });
     });
   </script>
