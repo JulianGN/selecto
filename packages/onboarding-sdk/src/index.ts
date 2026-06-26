@@ -295,6 +295,8 @@ export class OnboardingTour {
     // Apply premium styling
     Object.assign(tooltip.style, {
       position: 'fixed',
+      display: 'flex',
+      flexDirection: 'column',
       backgroundColor: this.options.theme?.backgroundColor ? this.hexToRgba(this.options.theme.backgroundColor, 0.95) : 'rgba(15, 23, 42, 0.95)',
       backdropFilter: 'blur(8px)',
       webkitBackdropFilter: 'blur(8px)',
@@ -306,6 +308,7 @@ export class OnboardingTour {
       zIndex: '2147483647', // Above the highlight overlay (2147483646)
       maxWidth: '320px',
       width: '280px',
+      maxHeight: '360px',
       boxSizing: 'border-box',
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
     });
@@ -322,12 +325,29 @@ export class OnboardingTour {
       : 'rgba(99, 102, 241, 0.4)';
 
     tooltip.innerHTML = `
-      <div style="font-weight: bold; margin-bottom: 8px; font-size: 15px; color: ${textColor}; display: flex; justify-content: space-between; align-items: center;">
+      <style>
+        .selecto-scroll::-webkit-scrollbar {
+          width: 4px;
+        }
+        .selecto-scroll::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .selecto-scroll::-webkit-scrollbar-thumb {
+          background: ${this.hexToRgba(textColor, 0.2)};
+          border-radius: 2px;
+        }
+        .selecto-scroll::-webkit-scrollbar-thumb:hover {
+          background: ${this.hexToRgba(textColor, 0.4)};
+        }
+      </style>
+      <div style="font-weight: bold; margin-bottom: 8px; font-size: 15px; color: ${textColor}; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
         <span>${step.title}</span>
         <button id="btn-skip" style="background: none; border: none; color: ${mutedTextColor}; cursor: pointer; font-size: 16px; padding: 4px; line-height: 1; transition: color 0.2s;">✕</button>
       </div>
-      <div style="margin-bottom: 16px; font-size: 13.5px; color: ${mutedTextColor}; line-height: 1.4;">${this.parseRichContent(step.content)}</div>
-      <div style="display: flex; justify-content: space-between; align-items: center;">
+      <div class="selecto-scroll" style="margin-bottom: 16px; font-size: 13.5px; color: ${mutedTextColor}; line-height: 1.4; max-height: 200px; overflow-y: auto; padding-right: 4px; flex-grow: 1;">
+        ${this.parseRichContent(step.content)}
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
         <span style="font-size: 12px; color: ${mutedTextColor}; font-weight: 500;">${this.currentStepIndex + 1} / ${this.steps.length}</span>
         <div style="display: flex; align-items: center;">
           ${this.currentStepIndex > 0 ? `
@@ -385,6 +405,8 @@ export class OnboardingTour {
       left: '50%',
       top: '50%',
       transform: 'translate(-50%, -50%)',
+      display: 'flex',
+      flexDirection: 'column',
       backgroundColor: this.options.theme?.backgroundColor ? this.hexToRgba(this.options.theme.backgroundColor, 0.95) : 'rgba(15, 23, 42, 0.95)',
       backdropFilter: 'blur(8px)',
       webkitBackdropFilter: 'blur(8px)',
@@ -395,6 +417,7 @@ export class OnboardingTour {
       boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
       zIndex: '2147483647', // Above the highlight overlay (2147483646)
       maxWidth: '400px',
+      maxHeight: '480px',
       width: '90%',
       boxSizing: 'border-box',
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
@@ -412,12 +435,29 @@ export class OnboardingTour {
       : 'rgba(99, 102, 241, 0.4)';
 
     modal.innerHTML = `
-      <div style="font-weight: bold; font-size: 18px; margin-bottom: 12px; color: ${textColor}; display: flex; justify-content: space-between; align-items: center;">
+      <style>
+        .selecto-scroll::-webkit-scrollbar {
+          width: 4px;
+        }
+        .selecto-scroll::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .selecto-scroll::-webkit-scrollbar-thumb {
+          background: ${this.hexToRgba(textColor, 0.2)};
+          border-radius: 2px;
+        }
+        .selecto-scroll::-webkit-scrollbar-thumb:hover {
+          background: ${this.hexToRgba(textColor, 0.4)};
+        }
+      </style>
+      <div style="font-weight: bold; font-size: 18px; margin-bottom: 12px; color: ${textColor}; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
         <span>${step.title}</span>
         <button id="btn-skip" style="background: none; border: none; color: ${mutedTextColor}; cursor: pointer; font-size: 16px; padding: 4px; line-height: 1; transition: color 0.2s;">✕</button>
       </div>
-      <div style="margin-bottom: 20px; font-size: 14.5px; color: ${mutedTextColor}; line-height: 1.5;">${this.parseRichContent(step.content)}</div>
-      <div style="display: flex; justify-content: space-between; align-items: center;">
+      <div class="selecto-scroll" style="margin-bottom: 20px; font-size: 14.5px; color: ${mutedTextColor}; line-height: 1.5; max-height: 280px; overflow-y: auto; padding-right: 4px; flex-grow: 1;">
+        ${this.parseRichContent(step.content)}
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
         <span style="font-size: 12px; color: ${mutedTextColor}; font-weight: 500;">${this.currentStepIndex + 1} / ${this.steps.length}</span>
         <div style="display: flex; align-items: center;">
           ${this.currentStepIndex > 0 ? `
@@ -493,6 +533,50 @@ export class OnboardingTour {
     return html;
   }
 
+  private sanitizeHTML(htmlString: string): string {
+    if (typeof window === 'undefined') return htmlString;
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(htmlString, 'text/html');
+      const allElements = doc.body.querySelectorAll('*');
+      allElements.forEach(el => {
+        const tagName = el.tagName.toLowerCase();
+        if (['script', 'style', 'iframe', 'object', 'embed', 'link'].includes(tagName)) {
+          if (tagName === 'iframe') {
+            const src = el.getAttribute('src') || '';
+            if (src.startsWith('https://www.youtube.com/embed/')) {
+              const attrs = Array.from(el.attributes);
+              attrs.forEach(attr => {
+                if (!['src', 'allowfullscreen', 'frameborder', 'style', 'width', 'height'].includes(attr.name.toLowerCase())) {
+                  el.removeAttribute(attr.name);
+                }
+              });
+              return;
+            }
+          }
+          el.remove();
+          return;
+        }
+        const attrs = Array.from(el.attributes);
+        attrs.forEach(attr => {
+          const attrName = attr.name.toLowerCase();
+          if (attrName.startsWith('on')) {
+            el.removeAttribute(attr.name);
+          } else if (['src', 'href', 'action'].includes(attrName)) {
+            const val = attr.value.trim().toLowerCase();
+            if (val.startsWith('javascript:') || val.startsWith('data:text/html')) {
+              el.removeAttribute(attr.name);
+            }
+          }
+        });
+      });
+      return doc.body.innerHTML;
+    } catch (e) {
+      console.error('Error sanitizing HTML:', e);
+      return htmlString;
+    }
+  }
+
   private parseRichContent(content: string): string {
     if (!content) return "";
     
@@ -557,7 +641,7 @@ export class OnboardingTour {
       return this.parseInlineMarkdown(line);
     });
 
-    return parsedLines.join('\n');
+    return this.sanitizeHTML(parsedLines.join('\n'));
   }
 
   private cleanupUI(): void {

@@ -46,7 +46,9 @@ const LOCALES: Record<string, any> = {
     previewTour: 'Preview Tour',
     fieldThemeColor: 'Accent Color',
     fieldThemeBg: 'Modal Background',
-    fieldThemeText: 'Text Color'
+    fieldThemeText: 'Text Color',
+    stepsLayout: 'Steps Layout',
+    stepDefault: 'Step'
   },
   'pt-BR': {
     title: 'Criador de Tour Selecto',
@@ -81,7 +83,9 @@ const LOCALES: Record<string, any> = {
     previewTour: 'Visualizar Tour',
     fieldThemeColor: 'Cor de Destaque',
     fieldThemeBg: 'Fundo da Modal',
-    fieldThemeText: 'Cor do Texto'
+    fieldThemeText: 'Cor do Texto',
+    stepsLayout: 'Disposição dos Passos',
+    stepDefault: 'Passo'
   },
   es: {
     title: 'Creador de Tour Selecto',
@@ -116,7 +120,9 @@ const LOCALES: Record<string, any> = {
     previewTour: 'Vista Previa',
     fieldThemeColor: 'Color de Acento',
     fieldThemeBg: 'Fundo del Modal',
-    fieldThemeText: 'Color del Texto'
+    fieldThemeText: 'Color del Texto',
+    stepsLayout: 'Disposición de Pasos',
+    stepDefault: 'Paso'
   }
 };
 
@@ -131,6 +137,7 @@ export class OnboardingBuilder {
   private containerElement: HTMLElement | null = null;
   private shadowRoot: ShadowRoot | null = null;
   private inspector: any = null;
+  private hoverInspector: any = null;
   
   private isInspecting: boolean = false;
   private isSaving: boolean = false;
@@ -220,6 +227,11 @@ export class OnboardingBuilder {
       this.inspector.stop();
       this.inspector = null;
     }
+
+    if (this.hoverInspector) {
+      this.hoverInspector.stop();
+      this.hoverInspector = null;
+    }
     
     if (this.containerElement) {
       this.containerElement.remove();
@@ -229,6 +241,33 @@ export class OnboardingBuilder {
 
     window.removeEventListener('keydown', this.handleGlobalKeyDown);
     window.removeEventListener('resize', this.handleWindowResize);
+  }
+
+  private highlightStepTarget(selector: string | undefined): void {
+    if (!this.hoverInspector) {
+      this.hoverInspector = new ElementInspector({
+        enableFade: false,
+        showLabel: true,
+        highlightColor: this.themePrimaryColor
+      });
+    }
+
+    if (!selector) {
+      this.hoverInspector.highlightElement(null);
+      return;
+    }
+
+    try {
+      const element = document.querySelector(selector) as HTMLElement;
+      if (element) {
+        this.hoverInspector.highlightElement(element);
+      } else {
+        this.hoverInspector.highlightElement(null);
+      }
+    } catch (e) {
+      console.warn('Invalid selector for hover highlight:', selector, e);
+      this.hoverInspector.highlightElement(null);
+    }
   }
 
   private handleGlobalKeyDown = (e: KeyboardEvent): void => {
@@ -290,6 +329,7 @@ export class OnboardingBuilder {
       this.dragStartX = e.clientX;
       this.dragStartY = e.clientY;
       
+      dock.style.transition = 'none';
       dock.style.transform = 'none';
       dock.style.bottom = 'auto';
       dock.style.left = `${this.dockLeft}px`;
@@ -323,6 +363,8 @@ export class OnboardingBuilder {
         this.dockLeft = finalRect.left;
         this.dockTop = finalRect.top;
         
+        dock.style.transition = '';
+        
         document.removeEventListener('mousemove', onMouseMove);
         document.removeEventListener('mouseup', onMouseUp);
       };
@@ -341,6 +383,7 @@ export class OnboardingBuilder {
     style.textContent = `
       .selecto-builder-dock {
         position: fixed;
+        z-index: 2147483647;
         bottom: 20px;
         left: 50%;
         transform: translateX(-50%);
@@ -433,7 +476,7 @@ export class OnboardingBuilder {
 
       .form-grid {
         display: grid;
-        grid-template-cols: 1fr 1fr;
+        grid-template-columns: 1fr 1fr;
         gap: 12px;
       }
 
@@ -745,11 +788,11 @@ export class OnboardingBuilder {
         <div class="editor-body">
           <div class="form-row">
             <label>${this.getTranslation('stepTitle')}</label>
-            <input type="text" id="step-title-input" value="${step.title}" placeholder="Step name">
+            <input type="text" id="step-title-input" value="${step.title}" placeholder="Step name" maxlength="50">
           </div>
           <div class="form-row">
             <label>${this.getTranslation('stepContent')}</label>
-            <textarea id="step-content-input" rows="3" placeholder="Description of the action...">${step.content}</textarea>
+            <textarea id="step-content-input" rows="3" placeholder="Description of the action..." maxlength="500">${step.content}</textarea>
           </div>
           <div class="form-grid">
             <div class="form-row">
@@ -796,7 +839,7 @@ export class OnboardingBuilder {
         if (this.editingStepIndex !== null) {
           this.steps[this.editingStepIndex] = {
             ...this.steps[this.editingStepIndex],
-            title: titleInput.value.trim() || `Step ${this.editingStepIndex + 1}`,
+            title: titleInput.value.trim() || `${this.getTranslation('stepDefault')} ${this.editingStepIndex + 1}`,
             content: contentInput.value.trim(),
             placement: placementInput.value as any
           };
@@ -815,7 +858,7 @@ export class OnboardingBuilder {
         ? `<div class="no-steps-placeholder">${this.getTranslation('noSteps')}</div>`
         : `<div class="steps-list">
             ${this.steps.map((step, idx) => `
-              <div class="step-item">
+              <div class="step-item" data-index="${idx}">
                 <div class="step-meta">
                   <span class="step-badge">${idx + 1}</span>
                   <span class="step-title-text" title="${step.title}">${step.title}</span>
@@ -837,19 +880,19 @@ export class OnboardingBuilder {
           <div class="form-grid">
             <div class="form-row">
               <label>${this.getTranslation('tourId')}</label>
-              <input type="text" id="flow-slug-input" value="${this.tourId}" placeholder="slug-code" ${this.options.flowId ? 'readonly' : ''}>
+              <input type="text" id="flow-slug-input" value="${this.tourId}" placeholder="slug-code" ${this.options.flowId ? 'readonly' : ''} maxlength="50">
             </div>
             <div class="form-row">
               <label>${this.getTranslation('tourName')}</label>
-              <input type="text" id="flow-name-input" value="${this.tourName}" placeholder="e.g. Dashboard Tour">
+              <input type="text" id="flow-name-input" value="${this.tourName}" placeholder="e.g. Dashboard Tour" maxlength="80">
             </div>
           </div>
           <div class="form-row">
             <label>${this.getTranslation('tourDescription')}</label>
-            <input type="text" id="flow-desc-input" value="${this.tourDescriptionText}" placeholder="Brief introduction...">
+            <input type="text" id="flow-desc-input" value="${this.tourDescriptionText}" placeholder="Brief introduction..." maxlength="200">
           </div>
           
-          <div class="form-grid" style="margin-top: 4px; grid-template-cols: 1fr 1fr 1fr; gap: 8px;">
+          <div class="form-grid" style="margin-top: 4px; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
             <div class="form-row">
               <label>${this.getTranslation('fieldThemeColor')}</label>
               <input type="color" id="flow-theme-primary-input" value="${this.themePrimaryColor}" style="height: 30px; padding: 2px; cursor: pointer; width: 100%; border-radius: 6px; background: #090d16; border: 1px solid rgba(255,255,255,0.1);">
@@ -867,7 +910,7 @@ export class OnboardingBuilder {
           <div class="ai-assistant-section">
             <div class="ai-assistant-header">✨ ${this.getTranslation('aiTitle')}</div>
             <div class="ai-assistant-body">
-              <textarea id="ai-prompt-input" placeholder="${this.getTranslation('aiPromptPlaceholder')}">${this.aiPromptText}</textarea>
+              <textarea id="ai-prompt-input" placeholder="${this.getTranslation('aiPromptPlaceholder')}" maxlength="1000">${this.aiPromptText}</textarea>
               <button class="btn btn-primary btn-sm" id="ai-generate-btn" ${this.isAiGenerating ? 'disabled' : ''}>
                 ${this.isAiGenerating ? this.getTranslation('aiGenerating') : this.getTranslation('aiGenerateBtn')}
               </button>
@@ -875,7 +918,7 @@ export class OnboardingBuilder {
             ${this.aiErrorText ? `<div class="ai-assistant-error">${this.aiErrorText}</div>` : ''}
           </div>
           
-          <div class="steps-section-header">Steps Layout</div>
+          <div class="steps-section-header">${this.getTranslation('stepsLayout')}</div>
           ${stepsHtml}
         </div>
         <div class="dock-footer">
@@ -899,7 +942,7 @@ export class OnboardingBuilder {
       this.shadowRoot.getElementById('add-modal-step-btn')?.addEventListener('click', () => {
         const newStep: TourStep = {
           id: crypto.randomUUID(),
-          title: `Step ${this.steps.length + 1}`,
+          title: `${this.getTranslation('stepDefault')} ${this.steps.length + 1}`,
           content: '',
           placement: 'center'
         };
@@ -934,6 +977,20 @@ export class OnboardingBuilder {
           const idx = parseInt((e.target as HTMLElement).getAttribute('data-index') || '0');
           this.steps.splice(idx, 1);
           this.render();
+        });
+      });
+
+      // Bind hover highlight for steps
+      this.shadowRoot.querySelectorAll('.step-item').forEach(item => {
+        item.addEventListener('mouseenter', (e) => {
+          const idx = parseInt((e.currentTarget as HTMLElement).getAttribute('data-index') || '0');
+          const step = this.steps[idx];
+          if (step && step.targetSelector) {
+            this.highlightStepTarget(step.targetSelector);
+          }
+        });
+        item.addEventListener('mouseleave', () => {
+          this.highlightStepTarget(undefined);
         });
       });
 
@@ -992,7 +1049,7 @@ export class OnboardingBuilder {
           // Append new element step
           const newStep: TourStep = {
             id: crypto.randomUUID(),
-            title: `Step ${this.steps.length + 1}`,
+            title: `${this.getTranslation('stepDefault')} ${this.steps.length + 1}`,
             content: '',
             targetSelector: selectorData.css,
             placement: 'bottom'
@@ -1141,10 +1198,163 @@ export class OnboardingBuilder {
   }
 
   private generateHeuristicSteps(prompt: string, map: any[]): TourStep[] {
+    const promptLower = prompt.toLowerCase();
+    
+    // Check if the user is asking for a complete/all buttons flow
+    const completeFlowKeywords = [
+      'fluxo completo', 'fluxo dos botões', 'fluxo dos botoes', 'todos os botões', 'todos os botoes', 
+      'botões principais', 'botoes principais', 'principais botões', 'principais botoes',
+      'complete flow', 'all buttons', 'button flow', 'primary buttons', 'key buttons', 'core buttons',
+      'flujo completo', 'todos los botones', 'flujo de botones', 'botones principales', 'elementos principais'
+    ];
+    
+    const isCompleteFlowRequest = completeFlowKeywords.some(keyword => promptLower.includes(keyword));
+    
+    if (isCompleteFlowRequest && map.length > 0) {
+      const scoredElements = map.map(el => {
+        let score = 0;
+        const tag = el.tag.toUpperCase();
+        const text = el.text || '';
+        const testid = el.testid || '';
+        const role = el.role || '';
+        const selector = el.selector || '';
+        
+        if (tag === 'BUTTON' || role === 'button' || selector.includes('btn') || selector.includes('button')) {
+          score += 12;
+        } else if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') {
+          score += 8;
+        } else if (tag === 'A' && text) {
+          score += 5;
+        }
+        
+        if (testid) score += 10;
+        if (selector.startsWith('#') && !selector.startsWith('#step-')) score += 8;
+        if (text) score += 5;
+        
+        return { el, score };
+      });
+      
+      const seenSelectors = new Set<string>();
+      const validElements: any[] = [];
+      const sortedByScore = [...scoredElements].sort((a, b) => b.score - a.score);
+      
+      for (const item of sortedByScore) {
+        if (item.score < 5) continue;
+        const el = item.el;
+        if (!el.text && !el.placeholder && !el.ariaLabel && !el.testid) continue;
+        if (seenSelectors.has(el.selector)) continue;
+        seenSelectors.add(el.selector);
+        validElements.push(el);
+        if (validElements.length >= 5) break;
+      }
+      
+      if (validElements.length > 0) {
+        validElements.sort((a, b) => a.id - b.id);
+        
+        const locale = this.options.locale || 'en';
+        const isPt = locale.startsWith('pt');
+        const isEs = locale.startsWith('es');
+        
+        const welcomeTitle = isPt ? 'Início do Fluxo' : (isEs ? 'Inicio del Flujo' : 'Flow Start');
+        const welcomeDesc = isPt 
+          ? 'Este guia rápido mostrará as principais ações e elementos desta tela.' 
+          : (isEs 
+            ? 'Esta guía rápida le mostrará las principales acciones y elementos de esta pantalla.' 
+            : 'This quick guide will show you the main actions and elements of this screen.');
+            
+        const steps: TourStep[] = [];
+        
+        steps.push({
+          id: `step-intro-${Math.random().toString(36).substring(2, 9)}`,
+          title: welcomeTitle,
+          content: welcomeDesc,
+          placement: 'center'
+        });
+        
+        validElements.forEach((el, index) => {
+          const text = el.text || '';
+          const placeholder = el.placeholder || '';
+          const ariaLabel = el.ariaLabel || '';
+          const testid = el.testid || '';
+          const tag = el.tag.toUpperCase();
+          
+          let title = '';
+          let content = '';
+          
+          const label = text || placeholder || ariaLabel || testid || `Elemento ${index + 1}`;
+          let cleanLabel = label.length > 25 ? label.substring(0, 22) + '...' : label;
+          const labelLower = label.toLowerCase();
+          
+          if (tag === 'BUTTON' || el.role === 'button' || el.selector.includes('btn') || el.selector.includes('button')) {
+            title = isPt ? `Botão: ${cleanLabel}` : (isEs ? `Botón: ${cleanLabel}` : `Button: ${cleanLabel}`);
+            
+            if (['salvar', 'save', 'enviar', 'submit', 'confirmar', 'guardar'].some(w => labelLower.includes(w))) {
+              content = isPt 
+                ? 'Clique aqui para salvar suas alterações e enviar os dados preenchidos.' 
+                : (isEs 
+                  ? 'Haga clic aquí para guardar sus cambios y enviar los datos completados.' 
+                  : 'Click here to save your changes and submit the completed data.');
+            } else if (['novo', 'criar', 'new', 'create', 'adicionar', 'add'].some(w => labelLower.includes(w))) {
+              content = isPt 
+                ? 'Use este botão para criar um novo registro ou iniciar uma nova ação.' 
+                : (isEs 
+                  ? 'Use este botón para crear un nuevo registro o iniciar una nueva acción.' 
+                  : 'Use this button to create a new record or initiate a new action.');
+            } else if (['excluir', 'deletar', 'delete', 'remover', 'remove', 'cancelar', 'cancel'].some(w => labelLower.includes(w))) {
+              content = isPt 
+                ? 'Clique aqui para cancelar a operação ou remover este registro.' 
+                : (isEs 
+                  ? 'Haga clic aquí para cancelar la operación o eliminar este registro.' 
+                  : 'Click here to cancel the operation or remove this record.');
+            } else {
+              content = isPt 
+                ? 'Clique neste botão para executar a ação correspondente.' 
+                : (isEs 
+                  ? 'Haga clic en este botão para realizar la acción correspondiente.' 
+                  : 'Click this button to perform the corresponding action.');
+            }
+          } else if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') {
+            title = isPt ? `Campo: ${cleanLabel}` : (isEs ? `Campo: ${cleanLabel}` : `Field: ${cleanLabel}`);
+            
+            if (['nome', 'name', 'titulo', 'title', 'desc', 'email', 'usuario', 'user'].some(w => labelLower.includes(w))) {
+              content = isPt 
+                ? 'Preencha este campo com as informações de identificação necessárias.' 
+                : (isEs 
+                  ? 'Complete este campo con la información de identificación requerida.' 
+                  : 'Fill in this field with the necessary identification information.');
+            } else {
+              content = isPt 
+                ? 'Insira os dados solicitados neste campo de entrada.' 
+                : (isEs 
+                  ? 'Ingrese los datos solicitados en este campo de entrada.' 
+                  : 'Enter the requested data in this input field.');
+            }
+          } else {
+            title = isPt ? `Opção: ${cleanLabel}` : (isEs ? `Opción: ${cleanLabel}` : `Option: ${cleanLabel}`);
+            content = isPt 
+              ? 'Interaja com este elemento para prosseguir no fluxo de trabalho.' 
+              : (isEs 
+                ? 'Interactúe con este elemento para continuar con el flujo de trabajo.' 
+                : 'Interact with this element to proceed with the workflow.');
+          }
+          
+          steps.push({
+            id: `step-${index + 1}-${Math.random().toString(36).substring(2, 9)}`,
+            title,
+            content,
+            targetSelector: el.selector,
+            placement: tag === 'INPUT' || tag === 'TEXTAREA' ? 'right' : 'bottom'
+          });
+        });
+        
+        return steps;
+      }
+    }
+
     const steps: TourStep[] = [];
     
     // Split prompt by step connectors/transition words (PT, EN, ES)
-    const splitRegex = /\b(?:then|afterwards|next|depois|então|em seguida|después|luego|entonces|e depois|y después|e em seguida|a continuación)\b/i;
+    const splitRegex = /\b(?:then|afterwards|next|depois|então|em seguida|después|luego|entonces|e depois|y depois|e em seguida|a continuación)\b/i;
     const segments = prompt.split(splitRegex).map(s => s.trim()).filter(Boolean);
     
     // Multilingual dictionary of action synonyms
@@ -1242,7 +1452,7 @@ export class OnboardingBuilder {
           stepTitle = bestElement.text || 'Click element';
         }
       } else {
-        stepTitle = `Step ${segmentIdx + 1}`;
+        stepTitle = `${this.getTranslation('stepDefault')} ${segmentIdx + 1}`;
       }
       
       if (stepTitle.length > 25) {

@@ -76,6 +76,50 @@ function parseInlineMarkdown(text: string): string {
   return html;
 }
 
+function sanitizeHTML(htmlString: string): string {
+  if (typeof window === 'undefined') return htmlString;
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlString, 'text/html');
+    const allElements = doc.body.querySelectorAll('*');
+    allElements.forEach(el => {
+      const tagName = el.tagName.toLowerCase();
+      if (['script', 'style', 'iframe', 'object', 'embed', 'link'].includes(tagName)) {
+        if (tagName === 'iframe') {
+          const src = el.getAttribute('src') || '';
+          if (src.startsWith('https://www.youtube.com/embed/')) {
+            const attrs = Array.from(el.attributes);
+            attrs.forEach(attr => {
+              if (!['src', 'allowfullscreen', 'frameborder', 'style', 'width', 'height'].includes(attr.name.toLowerCase())) {
+                el.removeAttribute(attr.name);
+              }
+            });
+            return;
+          }
+        }
+        el.remove();
+        return;
+      }
+      const attrs = Array.from(el.attributes);
+      attrs.forEach(attr => {
+        const attrName = attr.name.toLowerCase();
+        if (attrName.startsWith('on')) {
+          el.removeAttribute(attr.name);
+        } else if (['src', 'href', 'action'].includes(attrName)) {
+          const val = attr.value.trim().toLowerCase();
+          if (val.startsWith('javascript:') || val.startsWith('data:text/html')) {
+            el.removeAttribute(attr.name);
+          }
+        }
+      });
+    });
+    return doc.body.innerHTML;
+  } catch (e) {
+    console.error('Error sanitizing HTML:', e);
+    return htmlString;
+  }
+}
+
 function parseRichContent(content: string): string {
   if (!content) return "";
   
@@ -140,7 +184,7 @@ function parseRichContent(content: string): string {
     return parseInlineMarkdown(line);
   });
 
-  return parsedLines.join('\n');
+  return sanitizeHTML(parsedLines.join('\n'));
 }
 
 function displayDescription(desc: string | null): string {
@@ -678,6 +722,7 @@ export default function DashboardClient({ initialFlows, initialStats }: Dashboar
                   placeholder={t("searchPlaceholder")}
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
+                  maxLength={100}
                   className="px-3.5 py-1.5 bg-background border border-border rounded-xl text-xs outline-none focus:ring-1 focus:ring-primary w-full md:w-48 text-slate-200"
                 />
                 <span className="text-xs bg-secondary/80 text-muted-foreground px-3 py-1 rounded-full border border-border font-semibold whitespace-nowrap">
@@ -801,6 +846,7 @@ export default function DashboardClient({ initialFlows, initialStats }: Dashboar
                     value={editingFlow.name}
                     onChange={e => setEditingFlow({ ...editingFlow, name: e.target.value })}
                     placeholder={t("fieldFlowNamePlaceholder")}
+                    maxLength={80}
                     className="w-full px-4 py-2.5 bg-background border border-border rounded-xl focus:ring-1 focus:ring-primary focus:border-primary outline-none transition text-sm"
                   />
                 </div>
@@ -812,6 +858,7 @@ export default function DashboardClient({ initialFlows, initialStats }: Dashboar
                     value={flowDescriptionText}
                     onChange={e => setFlowDescriptionText(e.target.value)}
                     placeholder={t("fieldDescriptionPlaceholder")}
+                    maxLength={200}
                     className="w-full px-4 py-2.5 bg-background border border-border rounded-xl focus:ring-1 focus:ring-primary focus:border-primary outline-none transition text-sm"
                   />
                 </div>
@@ -832,10 +879,11 @@ export default function DashboardClient({ initialFlows, initialStats }: Dashboar
                         value={flowThemeColor}
                         onChange={e => {
                           const val = e.target.value;
-                          if (val.startsWith("#") && val.length <= 7) {
+                          if (val === "" || (val.startsWith("#") && val.length <= 7)) {
                             setFlowThemeColor(val);
                           }
                         }}
+                        maxLength={7}
                         placeholder="#6366f1"
                         className="flex-1 px-4 py-2 bg-background border border-border rounded-xl focus:ring-1 focus:ring-primary focus:border-primary outline-none transition text-sm font-mono"
                       />
@@ -856,10 +904,11 @@ export default function DashboardClient({ initialFlows, initialStats }: Dashboar
                         value={flowThemeBg}
                         onChange={e => {
                           const val = e.target.value;
-                          if (val.startsWith("#") && val.length <= 7) {
+                          if (val === "" || (val.startsWith("#") && val.length <= 7)) {
                             setFlowThemeBg(val);
                           }
                         }}
+                        maxLength={7}
                         placeholder="#0f172a"
                         className="flex-1 px-4 py-2 bg-background border border-border rounded-xl focus:ring-1 focus:ring-primary focus:border-primary outline-none transition text-sm font-mono"
                       />
@@ -880,10 +929,11 @@ export default function DashboardClient({ initialFlows, initialStats }: Dashboar
                         value={flowThemeText}
                         onChange={e => {
                           const val = e.target.value;
-                          if (val.startsWith("#") && val.length <= 7) {
+                          if (val === "" || (val.startsWith("#") && val.length <= 7)) {
                             setFlowThemeText(val);
                           }
                         }}
+                        maxLength={7}
                         placeholder="#ffffff"
                         className="flex-1 px-4 py-2 bg-background border border-border rounded-xl focus:ring-1 focus:ring-primary focus:border-primary outline-none transition text-sm font-mono"
                       />
@@ -899,6 +949,7 @@ export default function DashboardClient({ initialFlows, initialStats }: Dashboar
                       value={editingFlow.id || ""}
                       onChange={e => setEditingFlow({ ...editingFlow, id: e.target.value.toLowerCase().replace(/[^a-z0-9-_]/g, '-') })}
                       placeholder="e.g. welcome-tour (leave blank to auto-generate)"
+                      maxLength={50}
                       className="w-full px-4 py-2.5 bg-background border border-border rounded-xl focus:ring-1 focus:ring-primary focus:border-primary outline-none transition text-sm font-mono text-indigo-300"
                     />
                   </div>
@@ -978,6 +1029,7 @@ export default function DashboardClient({ initialFlows, initialStats }: Dashboar
                     rows={12}
                     value={rawImportText}
                     onChange={e => setRawImportText(e.target.value)}
+                    maxLength={50000}
                     className="w-full px-4 py-3 bg-background border border-border rounded-2xl focus:ring-1 focus:ring-primary outline-none transition text-xs font-mono text-indigo-300 animate-in"
                   />
                 </div>
@@ -1038,6 +1090,7 @@ export default function DashboardClient({ initialFlows, initialStats }: Dashboar
                               value={step.title}
                               onChange={e => handleStepChange(idx, "title", e.target.value)}
                               placeholder="e.g. Click here to begin"
+                              maxLength={50}
                               className="w-full px-3.5 py-2 bg-background border border-border rounded-xl focus:ring-1 focus:ring-primary outline-none transition text-xs"
                             />
                           </div>
@@ -1070,6 +1123,7 @@ export default function DashboardClient({ initialFlows, initialStats }: Dashboar
                               onChange={e => handleStepChange(idx, "content", e.target.value)}
                               placeholder="Explain what the user needs to do in this step..."
                               rows={3}
+                              maxLength={500}
                               className="w-full px-3.5 py-2 bg-background border border-border rounded-xl focus:ring-1 focus:ring-primary outline-none transition text-xs"
                             />
                             {step.content && (
@@ -1095,6 +1149,7 @@ export default function DashboardClient({ initialFlows, initialStats }: Dashboar
                               value={step.targetSelector || ""}
                               onChange={e => handleStepChange(idx, "targetSelector", e.target.value)}
                               placeholder={t("stepSelectorPlaceholder")}
+                              maxLength={500}
                               className="w-full px-3.5 py-2 bg-background border border-border rounded-xl focus:ring-1 focus:ring-primary outline-none transition text-xs font-mono text-indigo-300"
                             />
                           </div>

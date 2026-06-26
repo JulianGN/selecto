@@ -461,7 +461,7 @@
         </div>
 
         <div class="item-body">
-          <input type="text" class="rename-input" value="${escapeHtml(item.name)}" placeholder="${chrome.i18n.getMessage('renamePlaceholder')}">
+          <input type="text" class="rename-input" value="${escapeHtml(item.name)}" placeholder="${chrome.i18n.getMessage('renamePlaceholder')}" maxlength="80">
           <div class="selector-display" title="${escapeHtml(activeSelector)}">${escapeHtml(activeSelector)}</div>
         </div>
 
