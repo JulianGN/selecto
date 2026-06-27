@@ -1,6 +1,6 @@
 # Selecto - Chrome Web Store Listing Assets
 
-Este documento contém os textos otimizados para a publicação da extensão **Selecto** na Chrome Web Store. Foram criadas versões em **Português** e **Inglês**, já configuradas com termos de busca (SEO) ideais para desenvolvedores e QAs.
+Este documento contém os textos otimizados para a publicação da extensão **Selecto** na Chrome Web Store. Foram criadas versões em **Português**, **Inglês** e **Espanhol**, já configuradas com termos de busca (SEO) ideais para desenvolvedores e QAs.
 
 ---
 
@@ -65,7 +65,7 @@ Escreva testes mais rápidos para Selenium, Cypress, Playwright, Robot Framework
 ## 📝 Detailed Description (Max. 16,000 characters)
 
 ```text
-Selecto is the ultimate extension for QA Engineers, testers, and frontend developers looking to speed up their UI test automation workflow.
+Selecto is the ultimate Chrome extension for QA Engineers, testers, and frontend developers looking to speed up their UI test automation workflow.
 
 With Selecto, you no longer need to open the Developer Tools (F12) and build complex XPath queries or CSS selectors manually. Just point, click, and capture!
 
@@ -97,19 +97,73 @@ Build faster test scripts for Selenium, Cypress, Playwright, and Robot Framework
 
 ---
 
+# 🇪🇸 Versión en Español (ES)
+
+## 📌 Detalles Básicos
+
+* **Nombre de la App (Título)** (Máx. 45 caracteres):
+  `Selecto - XPath & CSS Selector Organizer`
+* **Resumen (Descripción Corta)** (Máx. 150 caracteres):
+  `Seleccione y organice elementos HTML para pruebas automatizadas. Genere selectores CSS, XPath y locators para Playwright y Cypress.`
+
+---
+
+## 📝 Descripción Detallada (Máx. 16.000 caracteres)
+
+```text
+Selecto es la extensión de Chrome definitiva para ingenieros de QA, testers y desarrolladores frontend que desean acelerar el flujo de automatización de pruebas de interfaz de usuario.
+
+Con Selecto, ya no necesita abrir las Herramientas de Desarrollador (F12) y construir consultas XPath o selectores CSS complejos manualmente. ¡Solo apunte, haga clic y capture!
+
+✨ Características Clave:
+1. Inspector Visual de Elementos: Active el inspector y haga clic en cualquier elemento HTML para capturarlo al instante.
+2. Múltiples Formatos Soportados:
+   - CSS Selector: Genera rutas CSS limpias, robustas y optimizadas.
+   - XPath: Genera consultas XPath confiables y estructuradas.
+   - Playwright Locators: Selectores modernos listos para usar como page.getByRole, page.getByPlaceholder y page.locator.
+   - Cypress: Comandos limpios en la sintaxis cy.get().
+3. Panel Lateral Flotante: Una barra lateral arrastrable y colapsable que vive dentro de la página para que nunca pierda el foco.
+4. Organizador de Elementos: Renombre y etiquete sus localizadores capturados para organizar sus suites de pruebas.
+5. Acciones por Lote: Copie todos los elementos a la vez o exporte su colección completa como un archivo JSON organizado.
+6. Totalmente Aislado: Construido utilizando Shadow DOM para evitar problemas de estilo o conflictos con la aplicación web que está inspeccionando.
+
+🚀 Cómo Usar:
+1. Abra la barra lateral en cualquier sitio web haciendo clic en el icono de Selecto.
+2. Active el Inspector (o presione el atajo de teclado Alt + Shift + S).
+3. Haga clic en los elementos HTML que desee capturar para sus scripts de automatización.
+4. Renombre, cambie de formato y copie o exporte sus localizadores.
+
+¡Construya scripts de prueba más rápidos para Selenium, Cypress, Playwright y Robot Framework con Selecto!
+```
+
+---
+
+## 🏷️ Palabras Clave de Búsqueda (Search Keywords)
+`Buscador de XPath, Selector CSS, Localizadores Playwright, Selector Cypress, Automatizacion QA, Inspector Elementos, Ayudante Selenium, Pruebas Automatizadas, Web Scraping`
+
+---
+
 # 🎨 Textos para Imagens Promocionais (Store Graphics Copy)
 
 Caso crie banners ou capturas de tela para a loja, utilize estes textos de apoio:
 
 ### 🖼️ Banner Principal / Imagem de Capa (Large Tile / Cover)
 * **Título**: `Selecto`
-* **Subtítulo**: `O organizador de seletores definitivo para automação de testes QA.`
+* **Subtítulo (PT-BR)**: `O organizador de seletores definitivo para automação de testes QA.`
+* **Subtitle (EN-US)**: `The ultimate selector organizer for QA test automation.`
+* **Subtítulo (ES)**: `El organizador de selectores definitivo para la automatización de pruebas de QA.`
 
-### 🖼️ Captura de Tela 1: Inspeção de Elementos
-* **Texto de Apoio**: `Aponte, clique e capture seletores CSS, XPath e locators em tempo real.`
+### 🖼️ Captura de Tela 1: Inspeção de Elementos / Screenshot 1: Element Inspection
+* **Texto (PT-BR)**: `Aponte, clique e capture seletores CSS, XPath e locators em tempo real.`
+* **Text (EN-US)**: `Point, click, and capture CSS selectors, XPath, and locators in real time.`
+* **Texto (ES)**: `Apunte, haga clic y capture selectores CSS, XPath y localizadores en tiempo real.`
 
-### 🖼️ Captura de Tela 2: Formatos de Automação
-* **Texto de Apoio**: `Compatível com Playwright, Cypress, Selenium e muito mais com um único clique.`
+### 🖼️ Captura de Tela 2: Formatos de Automação / Screenshot 2: Automation Formats
+* **Texto (PT-BR)**: `Compatível com Playwright, Cypress, Selenium e muito mais com um único clique.`
+* **Text (EN-US)**: `Compatible with Playwright, Cypress, Selenium, and more with a single click.`
+* **Texto (ES)**: `Compatible con Playwright, Cypress, Selenium y más con un solo clic.`
 
-### 🖼️ Captura de Tela 3: Organização e Fila
-* **Texto de Apoio**: `Organize seus elementos capturados em listas, dê apelidos e exporte tudo em JSON.`
+### 🖼️ Captura de Tela 3: Organização e Fila / Screenshot 3: Organization & Queue
+* **Texto (PT-BR)**: `Organize seus elementos capturados em listas, dê apelidos e exporte tudo em JSON.`
+* **Text (EN-US)**: `Organize your captured elements in lists, set custom names, and export everything to JSON.`
+* **Texto (ES)**: `Organice sus elementos capturados en listas, asigne nombres personalizados y exporte todo a JSON.`
