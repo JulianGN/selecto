@@ -1,6 +1,6 @@
 {
   "name": "selecto-monorepo",
-  "version": "1.1.0",
+  "version": "1.1.4",
   "description": "Monorepo for Selecto: Chrome Extension, Onboarding Client SDK, and SaaS Dashboard",
   "private": true,
   "workspaces": [
@@ -14,6 +14,10 @@
     "dev:sdk": "npm run dev --workspace=packages/onboarding-sdk",
     "build:website": "npm run build --workspace=apps/website",
     "build:sdk": "npm run build --workspace=packages/onboarding-sdk",
+    "pack:extension": "node scripts/pack-extension.mjs",
+    "pack:extension:patch": "node scripts/pack-extension.mjs patch",
+    "pack:extension:minor": "node scripts/pack-extension.mjs minor",
+    "pack:extension:major": "node scripts/pack-extension.mjs major",
     "dev": "concurrently -n \"dashboard,website,sdk\" -c \"blue,cyan,magenta\" \"npm run dev:dashboard\" \"npm run dev:website\" \"npm run dev:sdk\"",
     "bump-version": "node scripts/bump-version.mjs",
     "publish:selector": "npm publish -w selecto-sdk --access public",

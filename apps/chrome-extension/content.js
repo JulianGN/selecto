@@ -6,6 +6,11 @@
 (function () {
   'use strict';
 
+  if (window.__SELECTO_CONTENT_SCRIPT_LOADED__) {
+    return;
+  }
+  window.__SELECTO_CONTENT_SCRIPT_LOADED__ = true;
+
   // Frame identification
   const isTopFrame = window.self === window.top;
 
@@ -52,9 +57,10 @@
       excludeFilter: (el) => {
         // Exclude the extension wrapper, simulated popup/icon in simulation, and overlay highlight itself
         return el.id === 'selector-extension-root' || 
-               el.closest('#selector-extension-root') || 
+               (el.closest && el.closest('#selector-extension-root')) || 
                el.id === 'selector-sdk-overlay' ||
-               el.closest('.simulated-extension-container');
+               (el.closest && el.closest('.simulated-extension-container')) ||
+               (isTopFrame && el.tagName === 'IFRAME');
       },
       onHover: (element, original) => {
         // Optional: show info in sidebar on hover. Currently handled visual-only by overlay.
