@@ -84,9 +84,11 @@ npm run pack:extension
 
 ## 4. Detalhes Técnicos Relevantes da Extensão
 
-* **Suporte a IFrames (`allFrames: true`)**:
-  - A extensão injeta `content.js` e `selector-sdk.js` em todos os quadros da página (`allFrames: true`).
-  - O painel visual flutuante (Sidebar) é renderizado **apenas no topo** (`window.self === window.top`).
+* **Suporte a IFrames & Princípio do Menor Privilégio (`activeTab`)**:
+  - A extensão segue rigorosamente o padrão de segurança da Chrome Web Store, utilizando apenas as permissões `activeTab`, `storage` e `scripting`, **sem solicitar permissões amplas de leitura em todos os sites (`<all_urls>`)**.
+  - A injeção ocorre sob demanda (ao clicar no ícone ou acionar `Alt + Shift + S`) via `chrome.scripting.executeScript` com `allFrames: true` e `matchOriginAsFallback: true`.
+  - Esse mecanismo cobre automaticamente todos os elementos do frame principal e **todos os iframes da mesma origem/domínio e inline (`srcdoc` e `about:blank`)**, sem exibir avisos de segurança invasivos aos usuários e garantindo aprovação rápida na loja.
+  - O painel visual flutuante (Sidebar) é renderizado **apenas no topo** (`window.self === window.top`), enquanto cada iframe gerencia de forma isolada seus overlays.
   - As seleções feitas dentro de `<iframe>` são sincronizadas com a barra lateral principal em tempo real usando `chrome.storage.local` e o listener `chrome.storage.onChanged`.
 * **Isolamento via Shadow DOM**:
   - Todo o estilo da barra lateral e dos cards do Selecto fica contido em um `ShadowRoot` fechado contra vazamento de CSS da página hospedeira.

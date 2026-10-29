@@ -9,7 +9,7 @@ O diretório `projeto/tests/` contém páginas HTML interativas prontas para val
 | Arquivo | Finalidade | Como testar |
 | :--- | :--- | :--- |
 | **`tests/test-discovery.html`** | Testa a descoberta automática de tours declarativos (`data-tour-*`) usando o `onboarding-sdk`. | Abra o arquivo no navegador e clique em **"Iniciar Tour Descoberto"**. |
-| **`tests/test-iframe.html`** | Valida a inspeção e captura de seletores dentro de `<iframe>` aninhados com a extensão Chrome ativa. | Abra no navegador com a extensão Selecto carregada e ative a inspeção. |
+| **`tests/test-iframe.html`** | Valida a inspeção e captura de seletores no frame principal e em `<iframe>` do mesmo domínio (via URL `src="test-iframe-content.html"` e inline `srcdoc`). | Abra no navegador com a extensão Selecto carregada e ative a inspeção. |
 | **`tests/test-sdk.html`** | Sandbox visual para testar o algoritmo de geração de seletores contra vários tipos de inputs, botões e tabelas. | Abra no navegador e use a área interativa para simular seleções. |
 | **`tests/test-all.html`** | Suíte integrada de testes visuais dos componentes. | Carregamento direto no navegador. |
 
