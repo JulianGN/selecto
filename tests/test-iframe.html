@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Selecto - Teste de Seletores em iFrames</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel-bg: rgba(30, 41, 59, 0.7);
+      --border: #334155;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #6366f1;
+      --accent-hover: #4f46e5;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      margin: 0;
+      padding: 40px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 900px;
+      width: 100%;
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #a5b4fc, var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
+    }
+
+    p.subtitle {
+      color: var(--text-muted);
+      font-size: 1rem;
+      margin-top: 0;
+      margin-bottom: 24px;
+    }
+
+    .card {
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      backdrop-filter: blur(8px);
+    }
+
+    .card h2 {
+      font-size: 1.25rem;
+      margin-top: 0;
+      margin-bottom: 16px;
+      color: #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn {
+      background-color: var(--accent);
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .btn:hover {
+      background-color: var(--accent-hover);
+    }
+
+    .iframe-wrapper {
+      width: 100%;
+      height: 320px;
+      border: 2px dashed var(--accent);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #1e293b;
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Selecto &bull; Teste com iFrames</h1>
+    <p class="subtitle">Validação de inspeção e captura de seletores no documento principal e em diferentes tipos de iFrames.</p>
+
+    <!-- Elementos no Top Frame -->
+    <div class="card">
+      <h2>🏠 Elementos no Frame Principal (Top Frame)</h2>
+      <p style="color: var(--text-muted); font-size: 0.9rem;">Esses elementos pertencem diretamente à página hospedeira.</p>
+      <div style="display: flex; gap: 12px; margin-top: 12px;">
+        <button id="btn-top-frame" class="btn" data-testid="top-frame-button">Botão do Top Frame</button>
+        <input type="text" placeholder="Input do Top Frame..." style="padding: 10px; border-radius: 6px; border: 1px solid var(--border); background: #0f172a; color: white;" data-qa="top-frame-input">
+      </div>
+    </div>
+
+    <!-- iFrame 1: Carregado via URL src -->
+    <div class="card">
+      <h2>🌐 1. iFrame com Arquivo/URL (src="test-iframe-content.html")</h2>
+      <p style="color: var(--text-muted); font-size: 0.9rem;">Este iframe carrega um arquivo HTML separado via atributo <code>src</code>.</p>
+      <div class="iframe-wrapper">
+        <iframe id="iframe-by-src" src="test-iframe-content.html"></iframe>
+      </div>
+    </div>
+
+    <!-- iFrame 2: Carregado via srcdoc -->
+    <div class="card">
+      <h2>📦 2. iFrame com Conteúdo Inline (srcdoc)</h2>
+      <p style="color: var(--text-muted); font-size: 0.9rem;">Este iframe usa <code>srcdoc</code> inline (gerando uma URL <code>about:srcdoc</code>).</p>
+      <div class="iframe-wrapper">
+        <iframe id="iframe-by-srcdoc" srcdoc="
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <style>
+              body {
+                background: #1e293b;
+                color: #f8fafc;
+                font-family: system-ui, sans-serif;
+                padding: 20px;
+                margin: 0;
+              }
+              h3 { margin-top: 0; color: #38bdf8; font-size: 1.1rem; }
+              .box {
+                background: #334155;
+                padding: 16px;
+                border-radius: 8px;
+                margin-bottom: 12px;
+              }
+              button {
+                background: #ec4899;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 6px;
+                font-weight: 600;
+                cursor: pointer;
+              }
+              input {
+                padding: 8px;
+                border-radius: 4px;
+                border: 1px solid #475569;
+                background: #0f172a;
+                color: white;
+                width: calc(100% - 20px);
+                margin-top: 8px;
+              }
+            </style>
+          </head>
+          <body>
+            <h3>📦 Documento Interno em srcdoc</h3>
+            <p style='color: #94a3b8; font-size: 0.9rem;'>Passe o mouse e clique no botão ou input abaixo:</p>
+            <div class='box'>
+              <button id='srcdoc-action-btn' data-testid='srcdoc-action-button'>Ação em srcdoc</button>
+              <br><br>
+              <label for='srcdoc-email'>Campo de E-mail (srcdoc):</label>
+              <input id='srcdoc-email' type='email' placeholder='email@empresa.com' data-qa='srcdoc-email-field' />
+            </div>
+          </body>
+          </html>
+        "></iframe>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

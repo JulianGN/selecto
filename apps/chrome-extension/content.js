@@ -6,6 +6,9 @@
 (function () {
   'use strict';
 
+  // Frame identification
+  const isTopFrame = window.self === window.top;
+
   // State
   let capturedItems = [];
   let defaultFormat = 'css'; // 'css', 'xpath', 'playwright', 'cypress'
@@ -61,27 +64,33 @@
       }
     });
 
-    // 3. Inject UI Container in DOM if not already present
-    injectUI();
+    // 3. Inject UI Container in DOM if not already present (top frame only)
+    if (isTopFrame) {
+      injectUI();
 
-    // 3b. Position sidebar if coordinates exist
-    if (state.sidebarPosition && state.sidebarPosition.left !== undefined) {
-      sidebarEl.style.right = 'auto';
-      sidebarEl.style.bottom = 'auto';
-      sidebarEl.style.left = `${state.sidebarPosition.left}px`;
-      sidebarEl.style.top = `${state.sidebarPosition.top}px`;
+      // 3b. Position sidebar if coordinates exist
+      if (state.sidebarPosition && state.sidebarPosition.left !== undefined && sidebarEl) {
+        sidebarEl.style.right = 'auto';
+        sidebarEl.style.bottom = 'auto';
+        sidebarEl.style.left = `${state.sidebarPosition.left}px`;
+        sidebarEl.style.top = `${state.sidebarPosition.top}px`;
+      }
     }
 
     // 4. Sync Inspector state based on storage
     if (isSelectionActive) {
       inspector.start();
     }
+
+    // 5. Setup Storage Sync across all frames
+    setupStorageSync();
   }
 
   /**
    * Creates the Shadow DOM container to isolate extension UI styles.
    */
   function injectUI() {
+    if (!isTopFrame) return;
     if (document.getElementById('selector-extension-root')) return;
 
     const root = document.createElement('div');
@@ -424,8 +433,10 @@
    * Renders the elements captured list in the sidebar.
    */
   function renderElementsList() {
+    if (!shadowRoot) return;
     const listContainer = shadowRoot.getElementById('elements-list');
     const emptyState = shadowRoot.getElementById('empty-state');
+    if (!listContainer || !emptyState) return;
     
     // Toggle empty state visibility
     if (capturedItems.length === 0) {
@@ -559,9 +570,11 @@
    * Helper to enable/disable footer buttons
    */
   function toggleFooterButtons(disabled) {
+    if (!shadowRoot) return;
     const copyAllBtn = shadowRoot.getElementById('copy-all-btn');
     const exportBtn = shadowRoot.getElementById('export-json-btn');
     const clearBtn = shadowRoot.getElementById('clear-all-btn');
+    if (!copyAllBtn || !exportBtn || !clearBtn) return;
 
     if (disabled) {
       copyAllBtn.classList.add('disabled');
@@ -577,9 +590,13 @@
   /**
    * Adds a newly selected element metadata to captured list.
    */
-  function addCapturedItem(selectorData) {
+  async function addCapturedItem(selectorData) {
+    // Get latest state from storage to avoid race conditions or out-of-sync frames
+    const state = await getStorageData();
+    const currentItems = state.capturedItems || capturedItems || [];
+
     // Generate a default name
-    const count = capturedItems.filter(item => item.tagName === selectorData.tagName).length + 1;
+    const count = currentItems.filter(item => item.tagName === selectorData.tagName).length + 1;
     const name = `${selectorData.tagName}_${count}`;
     
     const newItem = {
@@ -593,13 +610,17 @@
       cypress: selectorData.cypress
     };
 
-    capturedItems.push(newItem);
-    saveStorageData({ capturedItems });
-    renderElementsList();
+    const newItems = [...currentItems, newItem];
+    capturedItems = newItems;
+    isSidebarOpen = true;
 
-    // Auto open sidebar on first click
-    if (!isSidebarOpen) {
-      openSidebar();
+    saveStorageData({ capturedItems: newItems, isSidebarOpen: true });
+
+    if (shadowRoot) {
+      renderElementsList();
+      if (!isSidebarOpen) {
+        openSidebar();
+      }
     }
   }
 
@@ -678,13 +699,15 @@
     saveStorageData({ isSelectionActive });
     
     // Sync checkbox & badge visual states inside Shadow DOM
-    const chk = shadowRoot.getElementById('inspector-toggle-checkbox');
-    if (chk) chk.checked = true;
-    
-    const indicatorDot = shadowRoot.querySelector('.status-dot');
-    const indicatorText = shadowRoot.querySelector('.status-text');
-    if (indicatorDot) indicatorDot.className = 'status-dot active';
-    if (indicatorText) indicatorText.textContent = chrome.i18n.getMessage('inspectorActive');
+    if (shadowRoot) {
+      const chk = shadowRoot.getElementById('inspector-toggle-checkbox');
+      if (chk) chk.checked = true;
+      
+      const indicatorDot = shadowRoot.querySelector('.status-dot');
+      const indicatorText = shadowRoot.querySelector('.status-text');
+      if (indicatorDot) indicatorDot.className = 'status-dot active';
+      if (indicatorText) indicatorText.textContent = chrome.i18n.getMessage('inspectorActive');
+    }
 
     // Update Extension action icon state
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
@@ -698,13 +721,15 @@
     saveStorageData({ isSelectionActive });
     
     // Sync checkbox & badge visual states inside Shadow DOM
-    const chk = shadowRoot.getElementById('inspector-toggle-checkbox');
-    if (chk) chk.checked = false;
-    
-    const indicatorDot = shadowRoot.querySelector('.status-dot');
-    const indicatorText = shadowRoot.querySelector('.status-text');
-    if (indicatorDot) indicatorDot.className = 'status-dot';
-    if (indicatorText) indicatorText.textContent = chrome.i18n.getMessage('inspectorInactive');
+    if (shadowRoot) {
+      const chk = shadowRoot.getElementById('inspector-toggle-checkbox');
+      if (chk) chk.checked = false;
+      
+      const indicatorDot = shadowRoot.querySelector('.status-dot');
+      const indicatorText = shadowRoot.querySelector('.status-text');
+      if (indicatorDot) indicatorDot.className = 'status-dot';
+      if (indicatorText) indicatorText.textContent = chrome.i18n.getMessage('inspectorInactive');
+    }
 
     // Update Extension action icon state
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
@@ -746,12 +771,13 @@
     navigator.clipboard.writeText(text)
       .then(() => showCopySuccess(btnElement, successMsg, originalMsg))
       .catch(err => {
-        // 2. Fallback Copy using temporary input in Shadow DOM (robust)
+        // 2. Fallback Copy using temporary input in Shadow DOM or document.body (robust)
         const textarea = document.createElement('textarea');
         textarea.value = text;
         textarea.style.position = 'fixed';
         textarea.style.opacity = '0';
-        shadowRoot.appendChild(textarea);
+        const container = shadowRoot || document.body;
+        container.appendChild(textarea);
         textarea.select();
         try {
           document.execCommand('copy');
@@ -759,7 +785,7 @@
         } catch (e) {
           console.error('Failed to copy selector: ', e);
         }
-        shadowRoot.removeChild(textarea);
+        container.removeChild(textarea);
       });
   }
 
@@ -883,6 +909,104 @@
         resolve({});
       }
     });
+  }
+
+  /**
+   * Sets up real-time cross-frame synchronization using chrome.storage.
+   */
+  function setupStorageSync() {
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
+      chrome.storage.onChanged.addListener((changes, namespace) => {
+        if (namespace !== 'local' || !tabId) return;
+        const key = `tab_${tabId}`;
+        if (changes[key]) {
+          const newState = changes[key].newValue || {};
+          applyStateUpdate(newState);
+        }
+      });
+    }
+  }
+
+  /**
+   * Applies storage state updates across all frames.
+   */
+  function applyStateUpdate(newState) {
+    if (newState.isSelectionActive !== undefined && newState.isSelectionActive !== isSelectionActive) {
+      isSelectionActive = newState.isSelectionActive;
+      if (isSelectionActive) {
+        inspector.start();
+      } else {
+        inspector.stop();
+      }
+      if (shadowRoot) {
+        const chk = shadowRoot.getElementById('inspector-toggle-checkbox');
+        if (chk) chk.checked = isSelectionActive;
+        const indicatorDot = shadowRoot.querySelector('.status-dot');
+        const indicatorText = shadowRoot.querySelector('.status-text');
+        if (indicatorDot) indicatorDot.className = isSelectionActive ? 'status-dot active' : 'status-dot';
+        if (indicatorText) indicatorText.textContent = isSelectionActive 
+          ? chrome.i18n.getMessage('inspectorActive') 
+          : chrome.i18n.getMessage('inspectorInactive');
+      }
+    }
+
+    if (newState.capturedItems !== undefined) {
+      capturedItems = newState.capturedItems;
+      if (shadowRoot) {
+        renderElementsList();
+      }
+    }
+
+    if (newState.defaultFormat !== undefined && newState.defaultFormat !== defaultFormat) {
+      defaultFormat = newState.defaultFormat;
+      if (shadowRoot) {
+        const radio = shadowRoot.querySelector(`input[name="selector-format"][value="${defaultFormat}"]`);
+        if (radio) radio.checked = true;
+        renderElementsList();
+      }
+    }
+
+    if (newState.dimBackground !== undefined && newState.dimBackground !== dimBackground) {
+      dimBackground = newState.dimBackground;
+      if (inspector) inspector.setEnableFade(dimBackground);
+      if (shadowRoot) {
+        const dimCheckbox = shadowRoot.getElementById('dim-background-checkbox');
+        if (dimCheckbox) dimCheckbox.checked = dimBackground;
+        const intensityContainer = shadowRoot.getElementById('fade-intensity-container');
+        if (intensityContainer) intensityContainer.style.display = dimBackground ? 'flex' : 'none';
+      }
+    }
+
+    if (newState.fadeOpacity !== undefined && newState.fadeOpacity !== fadeOpacity) {
+      fadeOpacity = newState.fadeOpacity;
+      if (inspector) inspector.setFadeOpacity(fadeOpacity);
+      if (shadowRoot) {
+        const opacitySlider = shadowRoot.getElementById('fade-opacity-slider');
+        if (opacitySlider) opacitySlider.value = fadeOpacity;
+        const opacityValSpan = shadowRoot.getElementById('fade-opacity-val');
+        if (opacityValSpan) opacityValSpan.textContent = `${Math.round(fadeOpacity * 100)}%`;
+      }
+    }
+
+    if (newState.showLabel !== undefined && newState.showLabel !== showLabel) {
+      showLabel = newState.showLabel;
+      if (inspector) inspector.setShowLabel(showLabel);
+      if (shadowRoot) {
+        const showLabelCheckbox = shadowRoot.getElementById('show-label-checkbox');
+        if (showLabelCheckbox) showLabelCheckbox.checked = showLabel;
+      }
+    }
+
+    if (newState.isSidebarOpen !== undefined && newState.isSidebarOpen !== isSidebarOpen) {
+      isSidebarOpen = newState.isSidebarOpen;
+      if (sidebarEl) {
+        if (isSidebarOpen) {
+          sidebarEl.classList.add('open');
+        } else {
+          sidebarEl.classList.remove('open');
+        }
+      }
+    }
   }
 
   // --- Floating UI Stylesheet Content ---
@@ -1462,17 +1586,23 @@
       if (message.action === 'ping') {
         sendResponse({ status: 'alive' });
       } else if (message.action === 'toggle-selection') {
-        toggleSelection();
-        sendResponse({ success: true, active: isSelectionActive });
+        if (isTopFrame) {
+          toggleSelection();
+          sendResponse({ success: true, active: isSelectionActive });
+        }
       } else if (message.action === 'open-sidebar') {
-        openSidebar();
-        sendResponse({ success: true });
+        if (isTopFrame) {
+          openSidebar();
+          sendResponse({ success: true });
+        }
       } else if (message.action === 'get-status') {
-        sendResponse({ 
-          isSelectionActive, 
-          isSidebarOpen, 
-          itemCount: capturedItems.length 
-        });
+        if (isTopFrame) {
+          sendResponse({ 
+            isSelectionActive, 
+            isSidebarOpen, 
+            itemCount: capturedItems.length 
+          });
+        }
       }
       return true;
     });

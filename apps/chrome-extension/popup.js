@@ -63,8 +63,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (chrome.runtime.lastError || !response || response.status !== 'alive') {
         // Inject scripts programmatically
         chrome.scripting.executeScript({
-          target: { tabId: tabId },
-          files: ['selector-sdk.js', 'content.js']
+          target: { tabId: tabId, allFrames: true },
+          files: ['selector-sdk.js', 'content.js'],
+          matchOriginAsFallback: true
         }).then(() => {
           setTimeout(callback, 100);
         }).catch(err => {

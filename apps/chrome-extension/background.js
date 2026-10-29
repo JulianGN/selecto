@@ -21,8 +21,15 @@ chrome.commands.onCommand.addListener((command) => {
 // Listener to handle requests from popup or content scripts
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'get-tab-id') {
-    sendResponse({ tabId: sender.tab ? sender.tab.id : null });
-    return false; // Return false since response is synchronous
+    if (sender.tab && sender.tab.id) {
+      sendResponse({ tabId: sender.tab.id });
+      return false;
+    }
+    // Fallback for frames where sender.tab might be omitted
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      sendResponse({ tabId: tabs[0] && tabs[0].id ? tabs[0].id : null });
+    });
+    return true; // Keep message port open for async response
   }
 
   if (message.action === 'set-icon-state') {
@@ -61,8 +68,9 @@ function ensureScriptInjected(tabId, callback) {
     if (chrome.runtime.lastError || !response || response.status !== 'alive') {
       // Script is not running, inject it dynamically
       chrome.scripting.executeScript({
-        target: { tabId: tabId },
-        files: ['selector-sdk.js', 'content.js']
+        target: { tabId: tabId, allFrames: true },
+        files: ['selector-sdk.js', 'content.js'],
+        matchOriginAsFallback: true
       }).then(() => {
         // Allow a tiny delay for scripts to load and run listeners
         setTimeout(callback, 100);
