@@ -29,67 +29,110 @@
   let sidebarEl = null;
   let inspector = null;
 
-  // Initialize
+  // Storage key depends on tabId: writes are queued until it is known
+  let resolveTabIdReady;
+  const tabIdReady = new Promise((resolve) => { resolveTabIdReady = resolve; });
+  let storageQueue = Promise.resolve();
+
+  // 1. Message listener first, so commands are never lost
+  setupMessageListener();
+
+  // 2. Inspector created synchronously: never null when a command arrives
+  inspector = new ElementInspector({
+    enableFade: dimBackground,
+    fadeOpacity: fadeOpacity,
+    showLabel: showLabel,
+    excludeFilter: (el) => {
+      // Exclude the extension wrapper, simulated popup/icon in simulation, and overlay highlight itself
+      return el.id === 'selector-extension-root' ||
+             (el.closest && el.closest('#selector-extension-root')) ||
+             el.id === 'selector-sdk-overlay' ||
+             (el.closest && el.closest('.simulated-extension-container')) ||
+             (isTopFrame && el.tagName === 'IFRAME');
+    },
+    onHover: () => {},
+    onSelect: (element, selectorData) => {
+      addCapturedItem(selectorData);
+    }
+  });
+
+  // 3. Remove overlays orphaned by a previous (reloaded) extension context
+  document.querySelectorAll('#selector-sdk-overlay').forEach((el) => el.remove());
+
+  // 4. UI injected synchronously (top frame only)
+  if (isTopFrame) {
+    injectUI();
+  }
+
+  // 5. Async hydration (tabId, captured items and settings)
   init();
 
   /**
-   * Initializes the content script, loads state, and configures the SDK inspector.
+   * Hydrates persisted data. Open/active flags are NOT restored from storage on
+   * the top frame: a fresh injection always starts closed, avoiding stale toggles.
    */
   async function init() {
-    // 0. Request unique Tab ID from background worker
     tabId = await requestTabId();
+    resolveTabIdReady(tabId);
 
-    // 1. Load data from storage
     const state = await getStorageData();
     capturedItems = state.capturedItems || [];
-    defaultFormat = state.defaultFormat || 'css';
-    isSidebarOpen = state.isSidebarOpen || false;
-    isSelectionActive = state.isSelectionActive || false;
-    dimBackground = state.dimBackground !== undefined ? state.dimBackground : true;
-    fadeOpacity = state.fadeOpacity !== undefined ? state.fadeOpacity : 0.6;
-    showLabel = state.showLabel !== undefined ? state.showLabel : true;
+    if (state.defaultFormat) defaultFormat = state.defaultFormat;
+    if (state.dimBackground !== undefined) dimBackground = state.dimBackground;
+    if (state.fadeOpacity !== undefined) fadeOpacity = state.fadeOpacity;
+    if (state.showLabel !== undefined) showLabel = state.showLabel;
 
-    // 2. Initialize ElementInspector from Selector SDK
-    inspector = new ElementInspector({
-      enableFade: dimBackground,
-      fadeOpacity: fadeOpacity,
-      showLabel: showLabel,
-      excludeFilter: (el) => {
-        // Exclude the extension wrapper, simulated popup/icon in simulation, and overlay highlight itself
-        return el.id === 'selector-extension-root' || 
-               (el.closest && el.closest('#selector-extension-root')) || 
-               el.id === 'selector-sdk-overlay' ||
-               (el.closest && el.closest('.simulated-extension-container')) ||
-               (isTopFrame && el.tagName === 'IFRAME');
-      },
-      onHover: (element, original) => {
-        // Optional: show info in sidebar on hover. Currently handled visual-only by overlay.
-      },
-      onSelect: (element, selectorData) => {
-        addCapturedItem(selectorData);
-      }
-    });
+    inspector.setEnableFade(dimBackground);
+    inspector.setFadeOpacity(fadeOpacity);
+    inspector.setShowLabel(showLabel);
 
-    // 3. Inject UI Container in DOM if not already present (top frame only)
     if (isTopFrame) {
-      injectUI();
-
-      // 3b. Position sidebar if coordinates exist
-      if (state.sidebarPosition && state.sidebarPosition.left !== undefined && sidebarEl) {
-        sidebarEl.style.right = 'auto';
-        sidebarEl.style.bottom = 'auto';
-        sidebarEl.style.left = `${state.sidebarPosition.left}px`;
-        sidebarEl.style.top = `${state.sidebarPosition.top}px`;
-      }
-    }
-
-    // 4. Sync Inspector state based on storage
-    if (isSelectionActive) {
+      syncSettingsUI();
+      restoreSidebarPosition(state.sidebarPosition);
+      renderElementsList();
+      // Local state is authoritative: overwrite stale flags from previous page loads
+      saveStorageData({ isSelectionActive, isSidebarOpen });
+    } else if (state.isSelectionActive) {
+      // Child frame joining an active inspection session
+      isSelectionActive = true;
       inspector.start();
     }
 
-    // 5. Setup Storage Sync across all frames
     setupStorageSync();
+  }
+
+  /**
+   * Syncs settings controls inside the Shadow DOM with the current state.
+   */
+  function syncSettingsUI() {
+    if (!shadowRoot) return;
+    const radio = shadowRoot.querySelector(`input[name="selector-format"][value="${defaultFormat}"]`);
+    if (radio) radio.checked = true;
+    const dimCheckbox = shadowRoot.getElementById('dim-background-checkbox');
+    if (dimCheckbox) dimCheckbox.checked = dimBackground;
+    const intensityContainer = shadowRoot.getElementById('fade-intensity-container');
+    if (intensityContainer) intensityContainer.style.display = dimBackground ? 'flex' : 'none';
+    const opacitySlider = shadowRoot.getElementById('fade-opacity-slider');
+    if (opacitySlider) opacitySlider.value = fadeOpacity;
+    const opacityValSpan = shadowRoot.getElementById('fade-opacity-val');
+    if (opacityValSpan) opacityValSpan.textContent = `${Math.round(fadeOpacity * 100)}%`;
+    const showLabelCheckbox = shadowRoot.getElementById('show-label-checkbox');
+    if (showLabelCheckbox) showLabelCheckbox.checked = showLabel;
+  }
+
+  /**
+   * Restores the dragged sidebar position, ignoring values outside the viewport.
+   */
+  function restoreSidebarPosition(pos) {
+    if (!sidebarEl || !pos) return;
+    const valid = Number.isFinite(pos.left) && Number.isFinite(pos.top) &&
+      pos.left >= 0 && pos.top >= 0 &&
+      pos.left <= window.innerWidth - 100 && pos.top <= window.innerHeight - 100;
+    if (!valid) return;
+    sidebarEl.style.right = 'auto';
+    sidebarEl.style.bottom = 'auto';
+    sidebarEl.style.left = `${pos.left}px`;
+    sidebarEl.style.top = `${pos.top}px`;
   }
 
   /**
@@ -97,7 +140,11 @@
    */
   function injectUI() {
     if (!isTopFrame) return;
-    if (document.getElementById('selector-extension-root')) return;
+
+    const existingRoot = document.getElementById('selector-extension-root');
+    if (existingRoot && existingRoot.parentNode) {
+      existingRoot.parentNode.removeChild(existingRoot);
+    }
 
     const root = document.createElement('div');
     root.id = 'selector-extension-root';
@@ -198,7 +245,16 @@
             ${chrome.i18n.getMessage('showElementLabels')}
           </label>
         </div>
-        <button id="save-settings-btn" class="btn btn-primary btn-sm">${chrome.i18n.getMessage('saveSettings')}</button>
+        <div class="settings-footer-links">
+          <a href="https://juliangn.github.io/selecto/" target="_blank" rel="noopener noreferrer" class="discrete-link" title="Website Oficial">
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            Website Oficial
+          </a>
+          <a href="https://github.com/juliangn/selecto" target="_blank" rel="noopener noreferrer" class="discrete-link" title="GitHub">
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+            GitHub
+          </a>
+        </div>
       </div>
 
       <!-- Scrollable Elements List -->
@@ -300,69 +356,98 @@
       }
     });
 
-    // 2. Settings button (gear)
+    // 2. Settings button (gear) with active highlight and click-outside close
     const gearBtn = shadowRoot.getElementById('gear-btn');
     const settingsPanel = shadowRoot.getElementById('settings-panel');
-    gearBtn.addEventListener('click', () => {
-      settingsPanel.classList.toggle('open');
+
+    function closeSettingsDrawer() {
+      if (settingsPanel && settingsPanel.classList.contains('open')) {
+        settingsPanel.classList.remove('open');
+        if (gearBtn) gearBtn.classList.remove('active');
+      }
+    }
+
+    gearBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = settingsPanel.classList.toggle('open');
+      gearBtn.classList.toggle('active', isOpen);
     });
 
-    // 2b. Settings Panel interactive controls for dynamic fade intensity visibility
+    // Close settings drawer when clicking outside within the sidebar
+    shadowRoot.addEventListener('click', (e) => {
+      if (!settingsPanel || !settingsPanel.classList.contains('open')) return;
+      const path = typeof e.composedPath === 'function' ? e.composedPath() : [];
+      if (!path.includes(settingsPanel) && !path.includes(gearBtn)) {
+        closeSettingsDrawer();
+      }
+    });
+
+    // Close settings drawer when clicking anywhere on the host page.
+    // pointerdown is used because the inspector stops click propagation.
+    window.addEventListener('pointerdown', (e) => {
+      if (!settingsPanel || !settingsPanel.classList.contains('open')) return;
+      const path = typeof e.composedPath === 'function' ? e.composedPath() : [];
+      if (path.some((node) => node && node.id === 'selector-extension-root')) return;
+      closeSettingsDrawer();
+    }, true);
+
+    // 2b. Auto-save Settings Controls
     const dimCheckbox = shadowRoot.getElementById('dim-background-checkbox');
     const intensityContainer = shadowRoot.getElementById('fade-intensity-container');
     const opacitySlider = shadowRoot.getElementById('fade-opacity-slider');
     const opacityValSpan = shadowRoot.getElementById('fade-opacity-val');
+    const showLabelCheckbox = shadowRoot.getElementById('show-label-checkbox');
 
+    // 2c. Output format radio buttons (instant save & re-render)
+    const formatRadios = shadowRoot.querySelectorAll('input[name="selector-format"]');
+    formatRadios.forEach((radio) => {
+      radio.addEventListener('change', (e) => {
+        if (e.target.checked) {
+          defaultFormat = e.target.value;
+          saveStorageData({ defaultFormat });
+          renderElementsList();
+        }
+      });
+    });
+
+    // 2d. Dim background checkbox (instant apply & save)
     if (dimCheckbox && intensityContainer) {
       dimCheckbox.addEventListener('change', (e) => {
-        intensityContainer.style.display = e.target.checked ? 'flex' : 'none';
-      });
-    }
-
-    if (opacitySlider && opacityValSpan) {
-      opacitySlider.addEventListener('input', (e) => {
-        opacityValSpan.textContent = `${Math.round(e.target.value * 100)}%`;
-      });
-    }
-
-    // 3. Save Settings Button
-    const saveSettingsBtn = shadowRoot.getElementById('save-settings-btn');
-    saveSettingsBtn.addEventListener('click', () => {
-      const selectedRadio = shadowRoot.querySelector('input[name="selector-format"]:checked');
-      const showLabelCheckbox = shadowRoot.getElementById('show-label-checkbox');
-      
-      if (selectedRadio) {
-        defaultFormat = selectedRadio.value;
-      }
-      if (dimCheckbox) {
-        dimBackground = dimCheckbox.checked;
+        dimBackground = e.target.checked;
+        intensityContainer.style.display = dimBackground ? 'flex' : 'none';
         if (inspector) {
           inspector.setEnableFade(dimBackground);
         }
-      }
-      if (opacitySlider) {
-        fadeOpacity = parseFloat(opacitySlider.value);
+        saveStorageData({ dimBackground });
+      });
+    }
+
+    // 2e. Opacity slider (real-time visual feedback + debounced save)
+    let opacityDebounceTimer = null;
+    if (opacitySlider && opacityValSpan) {
+      opacitySlider.addEventListener('input', (e) => {
+        fadeOpacity = parseFloat(e.target.value);
+        opacityValSpan.textContent = `${Math.round(fadeOpacity * 100)}%`;
         if (inspector) {
           inspector.setFadeOpacity(fadeOpacity);
         }
-      }
-      if (showLabelCheckbox) {
-        showLabel = showLabelCheckbox.checked;
+        clearTimeout(opacityDebounceTimer);
+        opacityDebounceTimer = setTimeout(() => {
+          saveStorageData({ fadeOpacity });
+        }, 250);
+      });
+    }
+
+    // 2f. Show labels checkbox (instant apply & save)
+    if (showLabelCheckbox) {
+      showLabelCheckbox.addEventListener('change', (e) => {
+        showLabel = e.target.checked;
         if (inspector) {
           inspector.setShowLabel(showLabel);
         }
-      }
-
-      saveStorageData({
-        defaultFormat,
-        dimBackground,
-        fadeOpacity,
-        showLabel
+        saveStorageData({ showLabel });
       });
-      
-      renderElementsList();
-      settingsPanel.classList.remove('open');
-    });
+    }
 
     // 4. Close Panel button
     const closeBtn = shadowRoot.getElementById('close-sidebar-btn');
@@ -596,37 +681,39 @@
   /**
    * Adds a newly selected element metadata to captured list.
    */
-  async function addCapturedItem(selectorData) {
-    // Get latest state from storage to avoid race conditions or out-of-sync frames
-    const state = await getStorageData();
-    const currentItems = state.capturedItems || capturedItems || [];
-
-    // Generate a default name
-    const count = currentItems.filter(item => item.tagName === selectorData.tagName).length + 1;
-    const name = `${selectorData.tagName}_${count}`;
-    
-    const newItem = {
-      id: generateUUID(),
-      name: name,
-      tagName: selectorData.tagName.toUpperCase(),
-      text: selectorData.text,
-      css: selectorData.css,
-      xpath: selectorData.xpath,
-      playwright: selectorData.playwright,
-      cypress: selectorData.cypress
-    };
-
-    const newItems = [...currentItems, newItem];
-    capturedItems = newItems;
-    isSidebarOpen = true;
-
-    saveStorageData({ capturedItems: newItems, isSidebarOpen: true });
-
+  function addCapturedItem(selectorData) {
+    // Close settings drawer to prioritize viewing the captured items
     if (shadowRoot) {
-      renderElementsList();
-      if (!isSidebarOpen) {
-        openSidebar();
+      const panel = shadowRoot.getElementById('settings-panel');
+      const btn = shadowRoot.getElementById('gear-btn');
+      if (panel && panel.classList.contains('open')) {
+        panel.classList.remove('open');
+        if (btn) btn.classList.remove('active');
       }
+    }
+
+    // Atomic append inside the storage queue: fast consecutive captures never overwrite each other
+    updateStorage((state) => {
+      const currentItems = state.capturedItems || [];
+      const tagName = selectorData.tagName.toUpperCase();
+      const count = currentItems.filter((item) => item.tagName === tagName).length + 1;
+      const newItem = {
+        id: generateUUID(),
+        name: `${selectorData.tagName}_${count}`,
+        tagName: tagName,
+        text: selectorData.text,
+        css: selectorData.css,
+        xpath: selectorData.xpath,
+        playwright: selectorData.playwright,
+        cypress: selectorData.cypress
+      };
+      capturedItems = [...currentItems, newItem];
+      renderElementsList();
+      return { ...state, capturedItems, isSidebarOpen: true };
+    });
+
+    if (isTopFrame) {
+      openSidebar();
     }
   }
 
@@ -753,10 +840,13 @@
 
   function openSidebar() {
     isSidebarOpen = true;
+    if (!sidebarEl && isTopFrame) {
+      injectUI();
+    }
     if (sidebarEl) {
       sidebarEl.classList.add('open');
     }
-    saveStorageData({ isSidebarOpen });
+    saveStorageData({ isSidebarOpen: true });
   }
 
   function closeSidebar() {
@@ -764,7 +854,7 @@
     if (sidebarEl) {
       sidebarEl.classList.remove('open');
     }
-    saveStorageData({ isSidebarOpen });
+    saveStorageData({ isSidebarOpen: false });
   }
 
   // --- Utilities ---
@@ -895,26 +985,38 @@
 
   // --- Extension Storage Wrapper Helpers ---
 
+  function hasStorage() {
+    return typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local;
+  }
+
+  /**
+   * Serialized read-modify-write: waits for tabId and never drops or interleaves writes.
+   * @param {(state: object) => object} mutator - Receives the stored state and returns the next one.
+   */
+  function updateStorage(mutator) {
+    if (!hasStorage()) return;
+    storageQueue = storageQueue
+      .then(() => tabIdReady)
+      .then((id) => new Promise((resolve) => {
+        const key = `tab_${id}`;
+        chrome.storage.local.get(key, (result) => {
+          const nextState = mutator(result[key] || {});
+          chrome.storage.local.set({ [key]: nextState }, () => resolve());
+        });
+      }))
+      .catch((err) => console.warn('Selecto storage write failed:', err));
+  }
+
   function saveStorageData(obj) {
-    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local && tabId) {
-      chrome.storage.local.get(`tab_${tabId}`, (result) => {
-        const oldState = result[`tab_${tabId}`] || {};
-        const newState = { ...oldState, ...obj };
-        chrome.storage.local.set({ [`tab_${tabId}`]: newState });
-      });
-    }
+    updateStorage((state) => ({ ...state, ...obj }));
   }
 
   function getStorageData() {
-    return new Promise((resolve) => {
-      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local && tabId) {
-        chrome.storage.local.get(`tab_${tabId}`, (result) => {
-          resolve(result[`tab_${tabId}`] || {});
-        });
-      } else {
-        resolve({});
-      }
-    });
+    if (!hasStorage()) return Promise.resolve({});
+    return tabIdReady.then((id) => new Promise((resolve) => {
+      const key = `tab_${id}`;
+      chrome.storage.local.get(key, (result) => resolve(result[key] || {}));
+    })).catch(() => ({}));
   }
 
   /**
@@ -1041,37 +1143,28 @@
       #selector-sidebar {
         position: fixed;
         top: 20px;
-        right: 20px; /* Default starting position */
+        right: 20px;
         width: 350px;
         height: 500px;
         max-height: calc(100vh - 40px);
-        background: var(--bg-panel);
-        border: 1px solid var(--border-color);
+        background: #0f172a;
+        border: 1px solid rgba(255, 255, 255, 0.15);
         border-radius: 16px;
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
+        box-shadow: 0 20px 30px rgba(0, 0, 0, 0.6), 0 0 15px rgba(99, 102, 241, 0.2);
         z-index: 2147483647;
-        display: flex;
+        display: none;
         flex-direction: column;
         overflow: hidden;
         font-family: var(--font-sans);
         color: var(--text-primary);
         box-sizing: border-box;
-
-        /* Floating scale-up transition with default slight opacity */
-        opacity: 0;
-        pointer-events: none;
-        transform: translateY(10px) scale(0.98);
-        transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), 
-                    transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
-                    background-color 0.2s;
       }
 
       #selector-sidebar.open {
-        opacity: 0.82; /* Slight transparency by default */
-        pointer-events: auto;
-        transform: translateY(0) scale(1);
+        display: flex !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        pointer-events: auto !important;
       }
 
       #selector-sidebar.open:hover {
@@ -1172,6 +1265,20 @@
         color: var(--text-primary);
       }
 
+      .icon-btn.active {
+        background-color: rgba(99, 102, 241, 0.25);
+        color: var(--accent);
+        box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.4);
+      }
+
+      .icon-btn svg {
+        transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      .icon-btn.active svg {
+        transform: rotate(45deg);
+      }
+
       /* Inspector Activation Bar */
       .sidebar-controls {
         padding: 12px 16px;
@@ -1249,9 +1356,32 @@
       }
 
       .settings-drawer.open {
-        max-height: 310px;
+        max-height: 340px;
         padding: 14px 16px;
         border-bottom: 1px solid var(--border-color);
+      }
+
+      .settings-footer-links {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-top: 10px;
+        margin-top: 8px;
+        border-top: 1px solid var(--border-color);
+      }
+
+      .discrete-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        color: var(--text-muted);
+        text-decoration: none;
+        font-size: 10px;
+        transition: color 0.15s ease;
+      }
+
+      .discrete-link:hover {
+        color: var(--accent);
       }
 
       .settings-drawer h4 {
@@ -1586,35 +1716,52 @@
     `;
   }
 
-  // --- Synchronous Top-Level Chrome Message Listener ---
-  if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
+  // --- Chrome Message Listener (registered at bootstrap) ---
+  function setupMessageListener() {
+    if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.onMessage) return;
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-      if (message.action === 'ping') {
-        sendResponse({ status: 'alive' });
-      } else if (message.action === 'toggle-selection') {
-        if (isTopFrame) {
-          toggleSelection();
-          sendResponse({ success: true, active: isSelectionActive });
-        }
-      } else if (message.action === 'open-sidebar') {
-        if (isTopFrame) {
-          openSidebar();
-          sendResponse({ success: true });
-        }
-      } else if (message.action === 'get-status') {
-        if (isTopFrame) {
-          sendResponse({ 
-            isSelectionActive, 
-            isSidebarOpen, 
-            itemCount: capturedItems.length 
-          });
-        }
+      const action = message && message.action;
+
+      if (action === 'ping') {
+        sendResponse({ status: 'alive', isTopFrame });
+        return false;
       }
-      return true;
+
+      // UI commands are handled by the top frame only (child frames stay silent)
+      if (!isTopFrame) return false;
+
+      switch (action) {
+        case 'toggle-action':
+          if (!isSidebarOpen || !isSelectionActive) {
+            openSidebar();
+            startSelection();
+          } else {
+            stopSelection();
+            closeSidebar();
+          }
+          sendResponse({ success: true, isSidebarOpen, isSelectionActive });
+          break;
+        case 'toggle-selection':
+          toggleSelection();
+          if (isSelectionActive) openSidebar();
+          sendResponse({ success: true, active: isSelectionActive });
+          break;
+        case 'open-sidebar':
+          openSidebar();
+          startSelection();
+          sendResponse({ success: true });
+          break;
+        case 'get-status':
+          sendResponse({ isSelectionActive, isSidebarOpen, itemCount: capturedItems.length });
+          break;
+        default:
+          break;
+      }
+      return false;
     });
   }
 
-  // --- Escape key cancels selection ---
+  // --- Escape key cancels selection (panel stays open to review captured items) ---
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && isSelectionActive) {
       stopSelection();

@@ -5,6 +5,12 @@
 document.addEventListener('DOMContentLoaded', async () => {
   localizeUI();
 
+  // Show active manifest version in header
+  const versionEl = document.querySelector('.version');
+  if (versionEl) {
+    versionEl.textContent = `v${chrome.runtime.getManifest().version}`;
+  }
+
   const toggleCheckbox = document.getElementById('inspector-toggle');
   const statusBadge = document.getElementById('status-badge');
   const capturedCountEl = document.getElementById('captured-count');
@@ -12,11 +18,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   const openSandboxBtn = document.getElementById('open-sandbox-btn');
 
   let tabId = null;
+  let currentUrl = '';
 
   // Query active tab to identify its key
   const activeTabs = await queryActiveTab();
   if (activeTabs[0] && activeTabs[0].id) {
     tabId = activeTabs[0].id;
+    currentUrl = activeTabs[0].url || '';
+  }
+
+  // Check if current tab is a protected browser page (chrome://, about:, etc.)
+  if (isProtectedUrl(currentUrl)) {
+    const banner = document.getElementById('protected-page-banner');
+    if (banner) banner.style.display = 'flex';
+    toggleCheckbox.disabled = true;
+    openPanelBtn.disabled = true;
   }
 
   // Load initial state
@@ -53,7 +69,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 4. Open Local Sandbox tab button
   openSandboxBtn.addEventListener('click', () => {
-    chrome.tabs.create({ url: chrome.runtime.getURL('test-sdk.html') });
+    chrome.tabs.create({ url: 'https://juliangn.github.io/selecto/' });
     window.close();
   });
 
@@ -61,13 +77,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   function ensureScriptInjected(tabId, callback) {
     chrome.tabs.sendMessage(tabId, { action: 'ping' }, (response) => {
       if (chrome.runtime.lastError || !response || response.status !== 'alive') {
-        // Inject scripts programmatically
+        // 1. Injeta com garantia no frame principal (habilitado pelo activeTab)
         chrome.scripting.executeScript({
-          target: { tabId: tabId, allFrames: true },
-          files: ['selector-sdk.js', 'content.js'],
-          matchOriginAsFallback: true
+          target: { tabId: tabId },
+          files: ['selector-sdk.js', 'content.js']
         }).then(() => {
-          setTimeout(callback, 100);
+          // 2. Tenta estender aos iframes elegíveis (same-origin), ignorando se houver iframes externos restritos
+          chrome.scripting.executeScript({
+            target: { tabId: tabId, allFrames: true },
+            files: ['selector-sdk.js', 'content.js']
+          }).catch(() => {});
+
+          setTimeout(callback, 80);
         }).catch(err => {
           alert(
             chrome.i18n.getMessage('cannotInspectPage') + '\n\n' +
@@ -139,5 +160,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         resolve({});
       }
     });
+  }
+
+  // Check if a URL is an internal or protected browser page
+  function isProtectedUrl(url) {
+    if (!url) return false;
+    return url.startsWith('chrome://') || 
+           url.startsWith('chrome-extension://') || 
+           url.startsWith('edge://') || 
+           url.startsWith('about:') || 
+           url.startsWith('devtools://') || 
+           url.startsWith('view-source:') ||
+           url.includes('chrome.google.com/webstore') ||
+           url.includes('chromewebstore.google.com');
   }
 });

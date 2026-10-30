@@ -260,6 +260,7 @@
       this._handleKeyDown = this._handleKeyDown.bind(this);
       this._handleKeyUp = this._handleKeyUp.bind(this);
       this._updateOverlayPosition = this._updateOverlayPosition.bind(this);
+      this._handleMouseDown = this._handleMouseDown.bind(this);
     }
 
     /**
@@ -471,6 +472,7 @@
      */
     _addListeners() {
       window.addEventListener('mousemove', this._handleMouseMove, { passive: true });
+      window.addEventListener('mousedown', this._handleMouseDown, { capture: true });
       window.addEventListener('click', this._handleMouseClick, { capture: true });
       window.addEventListener('keydown', this._handleKeyDown, { passive: true });
       window.addEventListener('keyup', this._handleKeyUp, { passive: true });
@@ -484,6 +486,7 @@
      */
     _removeListeners() {
       window.removeEventListener('mousemove', this._handleMouseMove);
+      window.removeEventListener('mousedown', this._handleMouseDown, { capture: true });
       window.removeEventListener('click', this._handleMouseClick, { capture: true });
       window.removeEventListener('keydown', this._handleKeyDown);
       window.removeEventListener('keyup', this._handleKeyUp);
@@ -605,20 +608,34 @@
     }
 
     /**
-     * Handle mouse clicks, preventing default actions.
+     * Checks whether the event originated inside an excluded element (e.g. extension UI).
+     * @private
+     */
+    _isExcludedEvent(e) {
+      const path = typeof e.composedPath === 'function' ? e.composedPath() : [];
+      return path.some(node => node instanceof Element && this.excludeFilter(node));
+    }
+
+    /**
+     * Prevents focus, text selection and drag on host page elements during inspection.
+     * Propagation is NOT stopped so the browser still synthesizes the click event.
+     * @private
+     */
+    _handleMouseDown(e) {
+      if (!this.active || this._isExcludedEvent(e)) return;
+      e.preventDefault();
+    }
+
+    /**
+     * Handle mouse clicks, blocking host page actions (links, buttons, tabs) and capturing the target.
      * @private
      */
     _handleMouseClick(e) {
-      if (!this.active) return;
-
-      // Read composite path to check for exclusions
-      const path = e.composedPath();
-      const isExcluded = path.some(node => node instanceof Element && this.excludeFilter(node));
-
-      if (isExcluded) return;
+      if (!this.active || this._isExcludedEvent(e)) return;
 
       e.preventDefault();
       e.stopPropagation();
+      e.stopImmediatePropagation();
 
       const element = document.elementFromPoint(e.clientX, e.clientY);
       const target = this._resolveTarget(element, e.shiftKey);

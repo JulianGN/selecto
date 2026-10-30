@@ -21,7 +21,7 @@ Este guia direto ao ponto descreve como rodar a extensão **Selecto** em modo de
    projeto/apps/chrome-extension
    ```
 6. O ícone do **Selecto** estará ativo na barra de ferramentas do Chrome.
-7. Ao alterar código em `content.js`, `background.js` ou `popup.js`, clique no botão **Recarregar (ícone de seta circular)** no card da extensão em `chrome://extensions/`.
+7. Ao alterar código em `content.js` ou `background.js`, clique no botão **Recarregar (ícone de seta circular)** no card da extensão em `chrome://extensions/`.
 
 ---
 
@@ -59,10 +59,9 @@ npm run pack:extension
    ```
 5. Inclui **apenas** os arquivos exigidos pela Chrome Web Store:
    - `manifest.json`
-   - `background.js` (Service Worker)
+   - `background.js` (Service Worker - gerencia ativação via clique no ícone ou atalho)
    - `content.js` (UI injetada via Shadow DOM e escuta de eventos)
    - `selector-sdk.js` (Módulo gerador de seletores)
-   - `popup.html`, `popup.css`, `popup.js` (Menu da barra do navegador)
    - `_locales/` (`en`, `es`, `pt_BR`)
    - `icon-16.png`, `icon-48.png`, `icon-128.png`, `icon-active-*.png`
    - `LICENSE`
@@ -84,9 +83,16 @@ npm run pack:extension
 
 ## 4. Detalhes Técnicos Relevantes da Extensão
 
+* **Ativação Instantânea em 1 Clique (One-Click Activation)**:
+  - Sem popups lentos ou intermediários: ao clicar no ícone do Selecto na barra do navegador ou pressionar `Alt + Shift + S`, o service worker (`background.js`) intercepta o clique através de `chrome.action.onClicked`, garante a injeção do SDK e abre a sidebar de seleção diretamente na página hospedeira.
+  - Se a sidebar já estiver aberta na página, um novo clique no ícone fecha o painel e encerra a seleção limpa.
+* **Configurações com Auto-Save e Debounce**:
+  - As preferências da sidebar (formato do seletor, dimmer de fundo e badge de tag) são salvas e aplicadas instantaneamente ao interagir, eliminando botões manuais de "Salvar".
+  - O slider de intensidade (`fade-opacity-slider`) oferece feedback visual em tempo real no evento `input` com persistência assíncrona debounced (250ms), protegendo a performance do `chrome.storage`.
+  - Links institucionais para o Website Oficial (`https://juliangn.github.io/selecto/`) e repositório GitHub ficam discretamente posicionados no rodapé da gaveta de configurações.
 * **Suporte a IFrames & Princípio do Menor Privilégio (`activeTab`)**:
   - A extensão segue rigorosamente o padrão de segurança da Chrome Web Store, utilizando apenas as permissões `activeTab`, `storage` e `scripting`, **sem solicitar permissões amplas de leitura em todos os sites (`<all_urls>`)**.
-  - A injeção ocorre sob demanda (ao clicar no ícone ou acionar `Alt + Shift + S`) via `chrome.scripting.executeScript` com `allFrames: true` e `matchOriginAsFallback: true`.
+  - A injeção ocorre sob demanda via `chrome.scripting.executeScript` com fallback para `allFrames: true`.
   - Esse mecanismo cobre automaticamente todos os elementos do frame principal e **todos os iframes da mesma origem/domínio e inline (`srcdoc` e `about:blank`)**, sem exibir avisos de segurança invasivos aos usuários e garantindo aprovação rápida na loja.
   - O painel visual flutuante (Sidebar) é renderizado **apenas no topo** (`window.self === window.top`), enquanto cada iframe gerencia de forma isolada seus overlays.
   - As seleções feitas dentro de `<iframe>` são sincronizadas com a barra lateral principal em tempo real usando `chrome.storage.local` e o listener `chrome.storage.onChanged`.

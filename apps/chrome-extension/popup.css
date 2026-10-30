@@ -78,6 +78,33 @@ body {
   color: var(--text-muted);
 }
 
+/* Protected Page Banner */
+.protected-banner {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 10px;
+  line-height: 1.4;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.banner-icon {
+  font-size: 12px;
+  line-height: 1;
+}
+
+.btn:disabled,
+.switch input:disabled + .slider {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 /* Body */
 .popup-body {
   display: flex;

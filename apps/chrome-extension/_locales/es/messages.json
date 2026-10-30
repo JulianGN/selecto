@@ -32,8 +32,12 @@
     "description": "Button to open sidebar panel"
   },
   "openTestSandbox": {
-    "message": "Abrir Sandbox de Prueba",
-    "description": "Button to open test sandbox tab"
+    "message": "Visitar Sitio Web Oficial",
+    "description": "Button to open official website"
+  },
+  "protectedPageNotice": {
+    "message": "Las páginas internas del navegador (chrome://) están protegidas. Abra un sitio web normal para inspeccionar.",
+    "description": "Notice shown in popup when active tab is a protected browser page"
   },
   "shortcutTip": {
     "message": "Atajo:",
